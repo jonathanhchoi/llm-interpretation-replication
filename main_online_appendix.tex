@@ -1,0 +1,706 @@
+\documentclass[12pt]{article}
+\usepackage{amsfonts}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage[margin=1.25in]{geometry}
+\usepackage{natbib}
+\usepackage{longtable}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{makecell}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{amsmath}
+\usepackage{setspace}
+\usepackage{comment}
+\usepackage[font=normal,labelfont=bf,skip=6pt]{caption}  % Add caption package with reduced skip
+
+% Add more space between paragraphs
+\setlength{\parskip}{0.5em}  % Add 1em space between paragraphs
+
+
+\title{Off-the-Shelf Large Language Models Are Unreliable Judges - Online Appendix}
+\author{Jonathan H. Choi}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+This Online Appendix provides supporting materials for \emph{Off-the-Shelf Large Language Models Are Unreliable Judges}. Section \ref{sec:prompt_perturbation} presents detailed results from the prompt perturbation analysis, including complete tables of representative prompt variations and their corresponding model outputs for all five legal scenarios tested. Section \ref{sec:model_sensitivity} extends the analysis of inter-model variation by comparing eight open-source LLMs on standardized linguistic interpretation questions, finding low correlations between models (mean $\rho = 0.051$), which further undermines claims that LLMs provide consistent interpretive guidance. Section \ref{appx:moe_spec_decoding} examines how specific architectural choices in modern commercial LLMs---particularly mixture-of-experts architectures and speculative decoding---may exacerbate prompt sensitivity and contribute to the inconsistency problems documented in the main text. Section \ref{sec:power_analysis} presents  statistical power analyses for the survey experiment.
+
+\section{Prompt Perturbation Analysis}
+\label{sec:prompt_perturbation}
+
+This Section presents detailed examples from the prompt perturbation analysis discussed in \textit{Large Language Models Are Unreliable Legal Interpreters}. For each of the five legal scenarios, I first show the original prompt in plain text, followed by a table containing 20 representative prompt variations selected from different percentile ranges of the distribution. Each table displays the rephrasings along with either their relative probability or their verbalized confidence score, along with the percentile rank of the relative probability or verbalized confidence score out of the distribution of all results from perturbations of the same prompt. The representative prompts are randomly sampled from 5-percentile buckets across the full distribution to illustrate the range of model responses to inputs generated from the same underlying set of facts.
+
+\subsection*{Prompt 1: Insurance Policy Water Damage Exclusion}
+
+\textbf{Original Prompt:} An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+\subsubsection*{Relative-Probabilities Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Relative Probabilities for Insurance Policy Water Damage Exclusion: "Covered" vs "Not" (Prompt 1)} \\
+\hline
+Prompt Variation & \makecell{Relative\\Probability} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+If an insurance policy excludes all water-related damage including "surface water" and "overflow of any body of water," would this exclusion apply when flooding results from levee infrastructure failure? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 3.9\% \\
+When an insurance policy excludes flood damage through language that covers loss "caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray," should claims involving levee system failures be treated differently than claims for natural flooding? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 5.9\% \\
+Would a court likely find that flooding caused by levee collapse falls within an insurance policy's exclusion for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not"? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 10.8\% \\
+Would an insurance company be required to pay a claim for damage caused by levee failure due to negligent engineering when the policy excludes "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not"? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 19.1\% \\
+When an insurance policy specifically excludes flood-related damages including "overflow of any body of water," does this exclusion extend to situations where property damage occurs due to levee collapse caused by engineering defects rather than natural disasters? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 23.2\% \\
+Does the source of water matter for insurance coverage purposes when a policy excludes flood damage—specifically, would water from a collapsed levee be treated differently than water from natural flooding? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 26.9\% \\
+Would an insurance company be obligated to pay a claim for flooding damage caused by levee structural failure given a policy exclusion for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray," when the levee failed due to human factors rather than natural flooding? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 34.3\% \\
+If an insurance policy excludes "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not," would this provision apply to deny coverage for property damage resulting from a levee failure caused by sabotage rather than natural forces? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 35.6\% \\
+If property damage results from flooding caused by levee collapse due to structural inadequacy or human negligence rather than natural forces, how should the water damage exclusion—stating the insurer will not pay for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray"—be interpreted regarding coverage? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 44.9\% \\
+When an insurance policy excludes "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not," and damage occurs from water released by a failing levee system, what factors determine whether this exclusion applies? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 46.6\% \\
+If flooding damage results from levee infrastructure failure rather than natural causes, would an insurance exclusion for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not" still apply to deny the claim? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 51.7\% \\
+Does an insurance policy's broad water exclusion covering "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray" apply to damages resulting from artificially-caused levee failures? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 57.8\% \\
+If a policyholder's property is damaged by water released from a failed levee system, can the insurance company deny the claim based on their flood and water overflow exclusion language? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 62.9\% \\
+Given an insurance policy that excludes coverage for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not," if flooding occurs when a levee fails due to poor workmanship rather than natural flood conditions, should the insurer provide coverage or apply the exclusion? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 65.1\% \\
+Does the standard water damage exclusion language covering "overflow of any body of water" extend to situations where a man-made levee system fails and causes flooding? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 71.3\% \\
+When determining coverage for levee failure claims, should insurance companies distinguish between flooding caused by natural events versus flooding caused by the failure of man-made flood control infrastructure? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 78.7\% \\
+If water damage to insured property results from a levee breach caused by engineering failure or inadequate maintenance rather than natural flooding, would the policy's exclusion for water-related damage including "overflow of any body of water" prevent the insurer from paying the claim? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 82.8\% \\
+When a levee fails due to non-natural causes and causes property damage, would this fall within the scope of an insurance exclusion that denies coverage for losses from "overflow of any body of water"? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 86.6\% \\
+If water damage occurs due to a levee breach caused by structural problems rather than natural flooding, can the insurer still invoke the exclusion clause that bars coverage for "overflow of any body of water"? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 92.0\% \\
+When an insured property suffers damage from water released by levee failure, where the failure is caused by structural problems rather than natural flooding, does an insurance policy's exclusion for "loss or damage caused by overflow of any body of water" bar coverage? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.963 & 99.8\% \\
+\end{longtable}
+
+\subsubsection*{Verbalized-Confidence Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Verbalized Confidence for Insurance Policy Water Damage Exclusion: "Covered" (Prompt 1)} \\
+\hline
+Prompt Variation & \makecell{Verbalized\\Confidence} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+Would an insurance company be obligated to pay a claim for flood damage resulting from levee collapse when the policy specifically excludes "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not"? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 0.8 & 1.1\% \\
+Under an insurance policy containing a flood exclusion that covers damage "caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray," would the insurer be obligated to pay claims when levee failure results from inadequate maintenance? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 7.2 & 8.0\% \\
+If a policyholder experiences property damage from flooding caused by a failed levee, would the standard flood exclusion language in their insurance contract bar coverage for their claim? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 8.1 & 11.5\% \\
+How would a court likely rule on coverage when an insured seeks compensation for damage caused by levee failure due to design flaws, and the insurance policy contains an exclusion stating "We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not"? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 9.3 & 18.3\% \\
+Given an insurance policy that excludes coverage for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not," would this exclusion bar coverage when flooding results from a man-made levee breach rather than natural flooding? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 9.8 & 24.4\% \\
+In cases where levee failure causes property damage, how do courts typically apply insurance exclusions that deny coverage for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray"? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 9.9 & 27.1\% \\
+Under an insurance policy containing a comprehensive water damage exclusion including "overflow of any body of water," would damage resulting from engineered levee failure be covered or excluded, and what factors determine the insurer's liability? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 10.3 & 33.4\% \\
+When an insurance policy excludes coverage for "loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not," does this language prevent claims for property damage caused by levee failures resulting from third-party negligence or government mismanagement? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 10.5 & 37.1\% \\
+Does an insurance policy's flood exclusion clause, which denies coverage for damage "caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray," apply when levee failure is the result of human error rather than natural forces? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 10.9 & 40.8\% \\
+How should courts interpret a flood exclusion provision that denies coverage for damage "caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray" when the flooding originated from human-caused levee failure rather than natural weather events? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 11.6 & 45.3\% \\
+Can an insured argue that their claim for levee failure damage should be paid despite a broad flood exclusion, based on the theory that artificial infrastructure failure constitutes a different type of loss than natural flood damage? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 12.7 & 50.2\% \\
+If an insurance contract excludes coverage for "flood, surface water, waves, overflow of any body of water," does this language encompass damage from levee breach when the failure results from human error rather than natural disaster? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 15.0 & 57.9\% \\
+When the immediate cause of flooding is levee collapse due to poor design or maintenance, does this fall within the scope of a policy's comprehensive water damage exclusion clause? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 16.3 & 61.9\% \\
+If flood damage results from the failure of engineered flood control structures like levees rather than natural causes, does the standard flood exclusion clause "We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not" still apply? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 18.3 & 67.9\% \\
+When flooding results from the breakdown of artificial flood control measures (levees) rather than natural causes, does the broad water damage exclusion for "flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray" preclude insurance coverage? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 19.6 & 71.8\% \\
+If an insurance company receives a claim for flood damage where the cause was a levee breach due to inadequate design rather than natural flooding, does the exclusion language "We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water" apply? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 22.2 & 76.8\% \\
+Does an insurance exclusion clause covering flood damage and water overflow apply to claims where the water damage originated from a man-made levee collapse instead of natural weather events? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 25.8 & 81.6\% \\
+If a levee breaks due to construction flaws or inadequate maintenance rather than natural causes, and this results in property damage, can an insurance company invoke the exclusion "We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not" to avoid paying the claim? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.3 & 87.4\% \\
+When water escapes due to a levee breach caused by structural defects rather than natural flood conditions, does this constitute damage from "overflow of any body of water" that would trigger the application of a flood exclusion clause? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 33.7 & 92.2\% \\
+In determining coverage for water damage claims arising from levee collapse rather than natural flood conditions, how broadly should insurance companies be permitted to apply their flood exclusion clause: "We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not"? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 36.3 & 95.5\% \\
+\end{longtable}
+
+\subsection*{Prompt 2: Prenuptial Agreement Petition Filing Date}
+
+\textbf{Original Prompt:} In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number of years of marriage for calculating the payment amount? The agreement states that payment will be based on 'the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed.' Please analyze whether 'a Petition' refers to the first or ultimate petition filed.
+
+\subsubsection*{Relative-Probabilities Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Relative Probabilities for Prenuptial Agreement Petition Filing Date: "Ultimate" vs "First" (Prompt 2)} \\
+\hline
+Prompt Variation & \makecell{Relative\\Probability} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+Does the grammatical construction "a Petition for Dissolution of Marriage is filed" in a prenuptial agreement suggest that the first filing (seven years, withdrawn unserved) triggers the calculation, or should it be interpreted to mean the operative filing (ten years) that actually initiates dissolution proceedings? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 0.029 & 3.4\% \\
+Should the phrase "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed" in a prenuptial agreement be interpreted to mean the first petition ever filed (seven years, later withdrawn) or the effective petition that initiated actual divorce proceedings (ten years)? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 0.953 & 8.9\% \\
+Does the indefinite article "a" in the phrase "at the time a Petition for Dissolution of Marriage is filed" within a prenuptial agreement refer to any petition or the final petition, particularly when the first petition filed after seven years was withdrawn without service before a second filing after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 0.996 & 11.9\% \\
+When interpreting a prenuptial agreement that bases payment on marriage duration "at the time a Petition for Dissolution of Marriage is filed," how should courts handle a situation where the first petition was filed at seven years but withdrawn unserved, and a second petition was filed at ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 16.2\% \\
+How should courts determine which filing date controls payment calculations under a prenuptial agreement stating obligations depend on "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," when there was both a withdrawn petition after seven years and an active petition after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 24.4\% \\
+How should courts interpret the phrase "at the time a Petition for Dissolution of Marriage is filed" in a prenuptial agreement when one spouse filed but withdrew a petition after seven years of marriage, then filed a new petition after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 27.6\% \\
+What is the correct interpretation of "the time a Petition for Dissolution of Marriage is filed" in prenuptial agreements when there are multiple filings - specifically, an initial filing after seven years that was withdrawn without service, followed by a second filing after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 30.6\% \\
+Under a prenuptial agreement calculating payments based on marriage length when "a Petition for Dissolution of Marriage is filed," how should the provision be applied when there are two filings—an initial one after seven years that was withdrawn without service, and a second one after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 39.3\% \\
+A prenuptial agreement calculates payments using marriage length "at the time a Petition for Dissolution of Marriage is filed." With filings at both seven years (withdrawn unserved) and ten years (proceeding), does the agreement's language "a Petition" encompass the first attempt or require the ultimately prosecuted petition? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 40.5\% \\
+How should family courts resolve the ambiguity in a prenuptial agreement that references "the time a Petition for Dissolution of Marriage is filed" when there was an initial petition filed at seven years (withdrawn before service) and a subsequent petition filed at ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 46.3\% \\
+A prenuptial agreement's payment formula depends on marriage duration measured at the time "a Petition for Dissolution of Marriage is filed." If there are two filings—one withdrawn after seven years and another proceeding after ten years—which filing date controls the payment calculation? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 54.0\% \\
+When analyzing the temporal clause "at the time a Petition for Dissolution of Marriage is filed" in a prenuptial agreement for payment calculation purposes, should the relevant time point be the initial petition filing (seven years, later withdrawn) or the subsequent petition filing (ten years, which proceeded to dissolution)? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 59.6\% \\
+A prenuptial contract bases spousal payments on years married when "a Petition for Dissolution of Marriage is filed." If there were two filings—one withdrawn after seven years without service and another after ten years—does "a Petition" mean the first filing or the final one that proceeds? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 61.0\% \\
+In interpreting a prenuptial agreement that bases payments on marriage length "at the time a Petition for Dissolution of Marriage is filed," how should courts handle a situation where a petition filed at year seven is withdrawn unserved, and a new petition is filed at year ten - which filing controls the calculation? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 67.5\% \\
+In the context of a prenuptial agreement that calculates spousal support based on marriage duration "at the time a Petition for Dissolution of Marriage is filed," should courts give effect to a petition filed after seven years but withdrawn without service, or to the subsequent petition filed after ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 72.1\% \\
+In prenuptial agreement interpretation, if the payment amount depends on "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," and there are sequential filings at seven years (withdrawn) and ten years (active), which filing date should be used for calculating the years of marriage? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 79.1\% \\
+If a prenuptial agreement ties financial obligations to "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," and there were two filings (one withdrawn after seven years, one proceeding after ten years), which filing date should determine the payment calculation? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 80.2\% \\
+When a prenuptial agreement specifies that financial calculations are based on years married "at the time a Petition for Dissolution of Marriage is filed," should a court consider an unserved petition that was withdrawn at seven years as the determinative filing, or does the provision refer to the effective petition filed at ten years? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 85.6\% \\
+A prenuptial agreement specifies payment amounts based on years married "at the time a Petition for Dissolution of Marriage is filed." If a spouse files for divorce at year seven but withdraws the petition before service, then files again at year ten, which filing date controls the payment calculation? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 100.0\% \\
+When interpreting a prenuptial agreement that determines financial obligations based on "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," and one party filed at seven years, withdrew the petition before service, then filed again at ten years, should the payment reflect the earlier or later filing date? Answer only 'First Petition' if the first filing date should be used or 'Ultimate Petition' if the ultimate filing date should be used, without any other explanation. & 1.000 & 100.0\% \\
+\end{longtable}
+
+\subsubsection*{Verbalized-Confidence Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Verbalized Confidence for Prenuptial Agreement Petition Filing Date: "Ultimate" (Prompt 2)} \\
+\hline
+Prompt Variation & \makecell{Verbalized\\Confidence} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+A couple has a prenuptial agreement stating payment amounts depend on years married "at the time a Petition for Dissolution of Marriage is filed." If the husband filed for divorce after seven years but withdrew it before serving his wife, then refiled after ten years, which filing date controls the payment calculation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 17.2 & 2.0\% \\
+When analyzing prenuptial agreement terms that determine financial payments by "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," which petition should control the calculation if there are two filings—one at seven years that was withdrawn without service, and another at ten years that proceeds through the divorce process? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 20.2 & 5.7\% \\
+When analyzing prenuptial agreement language that ties financial obligations to the marriage length "at the time a Petition for Dissolution of Marriage is filed," how should courts handle multiple filings where the first was withdrawn after seven years without service and the second occurred after ten years? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 23.4 & 14.3\% \\
+Under a prenuptial agreement specifying payment based on "full years married when a Petition for Dissolution of Marriage is filed," does the relevant filing date refer to the initial petition filed after seven years (but withdrawn before service) or the subsequent petition filed after ten years of marriage? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 25.1 & 19.5\% \\
+Under a prenuptial agreement, when a spouse initially files for divorce at the seven-year mark but withdraws the petition before service, then subsequently files again at ten years of marriage, should the payment calculation be based on the first filing date or the second filing date given that the contract specifies payments according to "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed"? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 25.8 & 22.3\% \\
+When a prenuptial agreement bases payment amounts on years married "at the time a Petition for Dissolution of Marriage is filed," and there are two filings—one after seven years (withdrawn unserved) and another after ten years—which filing should determine the financial obligation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 27.3 & 28.9\% \\
+Under a prenuptial agreement that bases financial obligations on years of marriage "at the time a Petition for Dissolution of Marriage is filed," how should the payment be calculated when the first petition was filed at seven years but withdrawn unserved, and a second petition was filed at ten years? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 28.1 & 34.1\% \\
+Under a marital contract referencing payment amounts based on years married "at the time a Petition for Dissolution of Marriage is filed," should the calculation use the date of the first petition (seven years, unserved and withdrawn) or the second petition (ten years)? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 28.9 & 39.3\% \\
+How should courts interpret "at the time a Petition for Dissolution of Marriage is filed" in a prenuptial agreement when there are two filings—one withdrawn after seven years before service, and another filed after ten years of marriage? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 29.1 & 40.2\% \\
+Where a prenuptial agreement's financial provisions depend on years married "at the time a Petition for Dissolution of Marriage is filed," and there have been two separate filings (one abandoned at seven years, one pursued at ten years), which petition's filing date determines the payment obligation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 29.9 & 46.8\% \\
+When analyzing prenuptial agreements that reference "the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed," should withdrawn petitions be considered legally significant filings that trigger payment calculations? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.7 & 53.3\% \\
+In prenuptial agreement disputes where payment amounts depend on years of marriage "at the time a Petition for Dissolution of Marriage is filed," how should attorneys argue the significance of withdrawn versus active petitions when multiple filings occurred at different marriage milestones? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 31.5 & 59.7\% \\
+A couple's prenuptial agreement calculates support based on years married when "a Petition for Dissolution of Marriage is filed." Given filings at both seven years (withdrawn without service) and ten years (proceeding), which filing date should govern the financial calculations? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 31.9 & 63.0\% \\
+A prenuptial agreement specifies that support depends on years married when "a Petition for Dissolution of Marriage is filed." Given a petition filed and withdrawn at seven years followed by another filed at ten years, which filing establishes the relevant marriage duration? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 32.5 & 67.3\% \\
+A couple's prenuptial agreement ties financial obligations to the length of marriage when "a Petition for Dissolution of Marriage is filed." If Party A files for divorce after seven years, withdraws the unserved petition, then refiles after ten years, which filing date controls the payment calculation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 32.9 & 70.2\% \\
+A prenuptial agreement specifies that spousal support depends on years of marriage "at the time a Petition for Dissolution of Marriage is filed." If a spouse files for divorce at year seven but withdraws before serving, then refiles at year ten, which filing date controls the calculation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 33.7 & 75.2\% \\
+Under a prenuptial contract, spousal payments are determined by marriage duration "at the time a Petition for Dissolution of Marriage is filed." When one party files a divorce petition after seven years of marriage, withdraws it unserved, and refiles after ten years, which filing date controls the payment calculation? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 35.9 & 84.7\% \\
+In analyzing prenuptial agreements that base financial obligations on years married "at the time a Petition for Dissolution of Marriage is filed," should the relevant time be determined by the first petition filed or by the petition that actually proceeds to dissolution when there are multiple filings? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 38.0 & 89.2\% \\
+When a prenuptial agreement's financial provisions are triggered by "the time a Petition for Dissolution of Marriage is filed," and one spouse files at seven years but withdraws without service before refiling at ten years, which filing should determine the marital duration for payment purposes? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 38.7 & 89.9\% \\
+Does the indefinite article "a" in the phrase "a Petition for Dissolution of Marriage is filed" within a prenuptial agreement suggest any petition filed during the marriage, or does it refer specifically to the petition that initiates the actual divorce proceedings when multiple petitions have been filed? How confident are you that the first filing date should be used, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 66.3 & 97.0\% \\
+\end{longtable}
+
+\subsection*{Prompt 3: Contract Term Affiliate Interpretation}
+
+\textbf{Original Prompt:} Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term binds [Company] and its 'other affiliate[s]' to a 50/50 royalty split after deducting fees charged by third parties that intermediate in foreign markets. Please analyze whether the term 'other affiliate[s]' includes only existing affiliates or includes future affiliates as well.
+
+\subsubsection*{Relative-Probabilities Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Relative Probabilities for Contract Term Affiliate Interpretation: "Existing" vs "Future" (Prompt 3)} \\
+\hline
+Prompt Variation & \makecell{Relative\\Probability} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+A 1961 agreement contains language binding [Company] and its "other affiliate[s]" to a 50/50 royalty division following deduction of third-party fees in international markets—does this contractual language encompass solely the affiliates that existed in 1961, or does it also apply to affiliates established subsequently? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 2.3\% \\
+When construing the scope of "other affiliate[s]" in a 1961 contractual provision that creates equal royalty-sharing duties for the Company and such affiliates after deducting international intermediary costs, should this term be interpreted to apply exclusively to affiliates in existence at contract formation or inclusively to affiliates created at any point during the contract period? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 9.2\% \\
+When a 1961 contract stipulates that [Company] and its "other affiliate[s]" must share royalties on a 50/50 basis following deduction of intermediary charges, should "other affiliate[s]" be construed to mean only the affiliates that existed at the moment of contract signing or should it include affiliates that come into existence during the contract term? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 14.3\% \\
+In a 1961 contractual provision establishing a 50/50 royalty sharing obligation between [Company] and its "other affiliate[s]" after foreign market intermediary fee deductions, does the phrase "other affiliate[s]" refer exclusively to affiliates in existence at contract formation or does it encompass affiliates developed over time? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 17.0\% \\
+How broadly should the term "other affiliate[s]" be interpreted in a 1961 contract requiring [Company] and such affiliates to split royalties 50/50 after third-party deductions—does it cover solely affiliates in existence at contract signing or does it also reach affiliates formed subsequently? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 24.8\% \\
+Does a 1961 contract clause requiring [Company] and its "other affiliate[s]" to share royalties equally after deducting intermediary charges in overseas markets create obligations that extend only to affiliates existing at contract execution, or does it establish a framework that automatically includes future affiliates? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.000 & 27.0\% \\
+What is the intended temporal reach of "other affiliate[s]" in a 1961 agreement that obligates [Company] and such affiliates to share royalties equally after foreign third-party fee deductions—does it cover only existing affiliates or future affiliates too? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.002 & 32.0\% \\
+In analyzing a 1961 contractual provision that requires [Company] and its "other affiliate[s]" to split royalties equally after subtracting third-party charges in overseas markets, does "other affiliate[s]" refer to a static group of companies existing in 1961, or does it create dynamic obligations that apply to affiliates established at any point? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.011 & 38.9\% \\
+When analyzing the meaning of "other affiliate[s]" in a 1961 contract that obligates [Company] and such affiliates to maintain 50/50 royalty splits after third-party deductions, should the interpretation be restricted to the affiliate landscape at contract signing or expanded to include the evolving affiliate structure? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.023 & 41.7\% \\
+In examining a 1961 contractual provision where [Company] and its "other affiliate[s]" agree to a 50/50 royalty split after foreign market intermediary deductions, what is the proper interpretation of "other affiliate[s]"—does it capture only contemporaneous affiliates or also future affiliate entities? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.076 & 47.5\% \\
+How broadly should "other affiliate[s]" be interpreted in a 1961 contract clause requiring [Company] and such affiliates to split royalties equally after third-party deductions in foreign markets—does this encompass only affiliates existing at contract formation or does it include affiliates established subsequently? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.148 & 51.6\% \\
+In interpreting the 1961 contractual requirement for [Company] and its "other affiliate[s]" to maintain 50/50 royalty splits after foreign intermediary deductions, does "other affiliate[s]" refer exclusively to affiliates existing at contract execution or include future subsidiaries? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.321 & 55.6\% \\
+In a 1961 contract term establishing equal royalty division between a Company and its "other affiliate[s]" following foreign market intermediary deductions, does the phrase "other affiliate[s]" create ongoing obligations for future affiliates or only bind existing ones? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.622 & 63.1\% \\
+How broadly should "other affiliate[s]" be interpreted in a 1961 contractual provision requiring [Company] and its affiliates to split royalties 50/50 after deducting foreign market third-party fees—does this extend beyond affiliates existing at contract signing to include future affiliates? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.731 & 65.9\% \\
+How broadly should "other affiliate[s]" be interpreted in a 1961 contract term that subjects a Company and its affiliates to 50/50 royalty splits net of third-party foreign market fees—does it include entities that become affiliates after contract formation? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.940 & 74.0\% \\
+How should the scope of "other affiliate[s]" be determined in a 1961 contract mandating that a Company and such affiliates share royalties 50/50 after deducting charges by foreign market intermediaries - does it capture only the affiliate landscape at contract formation or the changing affiliate landscape thereafter? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.982 & 78.7\% \\
+In analyzing a 1961 contract clause that binds [Company] and its "other affiliate[s]" to a 50/50 royalty arrangement after third-party fee deductions, should "other affiliate[s]" be construed to include entities that become affiliates subsequent to contract signing? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 0.996 & 83.5\% \\
+When examining a 1961 contract requiring [Company] and its "other affiliate[s]" to maintain equal royalty splits after foreign market intermediary deductions, does the affiliate category expand to include entities that achieve affiliate status post-contract? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 1.000 & 89.6\% \\
+Should the 1961 agreement's language binding [Company] and its "other affiliate[s]" to equal royalty distribution following foreign intermediary fee deductions be interpreted as establishing contractual duties that flow to affiliate entities created after 1961, or does the phrase "other affiliate[s]" refer exclusively to the corporate affiliations that existed when the parties entered into the contract? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 1.000 & 90.9\% \\
+What is the proper interpretation of "other affiliate[s]" in a 1961 contractual clause requiring [Company] and such affiliates to split royalties equally after removing intermediary charges in foreign markets—does it encompass prospective affiliates or exclusively current ones? Answer only 'Existing Affiliates' or 'Future Affiliates', without any other explanation. & 1.000 & 99.0\% \\
+\end{longtable}
+
+\subsubsection*{Verbalized-Confidence Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Verbalized Confidence for Contract Term Affiliate Interpretation: "Existing" (Prompt 3)} \\
+\hline
+Prompt Variation & \makecell{Verbalized\\Confidence} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+In a 1961 contract requiring a 50/50 royalty split (after third-party deductions) between [Company] and its "other affiliate[s]," should the phrase "other affiliate[s]" be interpreted to cover only affiliates existing when the contract was signed, or does it extend to affiliates established later? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 18.4 & 2.5\% \\
+In construing a 1961 contract term that subjects a Company and its "other affiliate[s]" to 50/50 royalty division following foreign intermediary deductions, does the phrase "other affiliate[s]" create a static obligation tied to affiliates existing at contract signing, or does it create a dynamic obligation that encompasses affiliates created over the contract's life? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 21.3 & 6.7\% \\
+In construing a 1961 contractual term that binds [Company] and its "other affiliate[s]" to a 50/50 royalty split following subtraction of overseas intermediary fees, does the phrase "other affiliate[s]" encompass affiliates formed after the agreement's effective date? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 22.9 & 10.0\% \\
+In a 1961 contract establishing a 50/50 royalty arrangement between [Company] and its "other affiliate[s]" after subtracting international intermediary charges, what affiliates fall within this definition - just those existing at contract inception or also future corporate entities? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 25.1 & 15.3\% \\
+When examining a 1961 royalty distribution provision requiring [Company] and its "other affiliate[s]" to split proceeds 50/50 (minus foreign market third-party fees), should "other affiliate[s]" be construed as referring exclusively to affiliates present when the contract was made or as encompassing future affiliate entities as well? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 26.9 & 20.6\% \\
+When analyzing a 1961 contractual provision that obligates [Company] and its "other affiliate[s]" to share royalties equally after third-party deductions, does this language encompass future subsidiary entities or is it limited to contemporaneous affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 28.8 & 29.8\% \\
+When determining the meaning of "other affiliate[s]" in a 1961 royalty-sharing provision that applies to the Company and such affiliates after deducting international intermediary fees, does this language encompass solely pre-existing affiliate relationships or does it extend to affiliate relationships formed in the future? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 29.3 & 33.2\% \\
+Does the contractual phrase "other affiliate[s]" in a 1961 royalty-splitting agreement (requiring 50/50 division after third-party deductions in foreign markets) establish obligations that are frozen in time to existing affiliates, or does it create dynamic obligations that attach to future affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.0 & 39.0\% \\
+How broadly should "other affiliate[s]" be interpreted in a 1961 contractual clause that obligates a Company and such affiliates to share royalties equally after paying fees to foreign market intermediaries—as referring only to then-current affiliates or as including affiliates established in the future? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.6 & 43.6\% \\
+In a 1961 contractual term requiring [Company] and its 'other affiliate[s]' to share royalties equally after foreign market intermediary fees, does the scope of 'other affiliate[s]' freeze at the moment of contract formation or does it evolve to include subsequently created affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.9 & 46.3\% \\
+In analyzing a 1961 contractual provision where [Company] and its "other affiliate[s]" must equally divide royalties net of third-party fees in overseas markets, what is the proper interpretation of "other affiliate[s]"—limited to existing entities or inclusive of later-formed affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 31.8 & 54.5\% \\
+Does the contractual language from 1961 that binds [Company] and its "other affiliate[s]" to a 50/50 royalty arrangement following third-party foreign intermediary fee deductions create obligations for affiliates that come into existence post-contract, or does it apply solely to affiliates existing when the agreement was executed? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 32.2 & 58.7\% \\
+When analyzing a 1961 contract clause requiring [Company] and its "other affiliate[s]" to maintain a 50/50 royalty split after third-party deductions, should the temporal scope of "other affiliate[s]" be read as fixed at contract signing or as dynamically including future affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 32.4 & 60.8\% \\
+In analyzing a 1961 contractual provision where [Company] and its "other affiliate[s]" must equally divide royalties after third-party foreign intermediary fee deductions, what is the proper interpretation of "other affiliate[s]"—limited to affiliates existing at contract execution or inclusive of subsequently formed affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 33.2 & 67.1\% \\
+How should courts interpret the scope of "other affiliate[s]" in a 1961 contract that requires [Company] and such affiliates to equally divide royalties after subtracting intermediary charges in foreign markets—does this include only then-existing affiliates or future ones too? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 33.7 & 70.9\% \\
+In examining a 1961 contract term that subjects [Company] and its 'other affiliate[s]' to equal royalty sharing after third-party fees in overseas markets, does 'other affiliate[s]' encompass exclusively present affiliates or does it extend to subsequently created affiliate entities? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 34.9 & 79.1\% \\
+Does a 1961 contractual provision requiring [Company] and its "other affiliate[s]" to maintain 50/50 royalty splits after foreign intermediary deductions create ongoing obligations that extend to newly formed affiliates, or does "other affiliate[s]" refer exclusively to affiliates in existence at contract signing? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 35.5 & 82.9\% \\
+How should courts interpret the scope of "other affiliate[s]" in a 1961 contract term that requires [Company] and such affiliates to divide royalties equally after deducting third-party charges in international markets—does it cover future affiliates or only existing ones? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 35.9 & 86.0\% \\
+How should courts interpret the scope of "other affiliate[s]" in a 1961 contract term that binds [Company] and such affiliates to equal royalty sharing after foreign intermediary deductions—does it include prospective affiliates or solely contemporaneous ones? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 37.5 & 94.0\% \\
+In interpreting a 1961 contract where [Company] and its "other affiliate[s]" must equally split royalties following removal of third-party charges in overseas markets, does the term "other affiliate[s]" have temporal limitations to contemporaneous entities or does it extend to later-formed affiliates? How confident are you that the royalty split only includes existing affiliates, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 38.3 & 95.9\% \\
+\end{longtable}
+
+\subsection*{Prompt 4: Construction Payment Terms Interpretation}
+
+\textbf{Original Prompt:} A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where they allegedly agreed payment would be made 'in the usual manner', the foundry accepted in writing. If one party claims it is customary to pay 85% of payments due at the end of every month, but the other argues payments are only due upon substantial completion, how should the term 'usual manner' be interpreted? Does this term refer to the monthly installment payments or to payment upon completion?
+
+\subsubsection*{Relative-Probabilities Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Relative Probabilities for Construction Payment Terms Interpretation: "Monthly" vs "Payment" (Prompt 4)} \\
+\hline
+Prompt Variation & \makecell{Relative\\Probability} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+In foundry construction correspondence, a contractor suggested two billing approaches: itemized charges or cost plus 10\%. After their telephone conversation allegedly establishing "usual manner" payment terms, the project was accepted in writing. With parties disagreeing whether custom requires 85\% monthly payments or payment only upon substantial completion, which understanding of "usual manner" should be legally recognized? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 0.622 & 1.2\% \\
+When a foundry construction contract specifies payment "in the usual manner" but the parties disagree on whether this means periodic monthly payments or payment upon project completion, how should a court resolve this interpretive conflict? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 0.998 & 9.1\% \\
+Following acceptance of a foundry construction proposal, the parties agreed to payment "in the usual manner." A dispute has emerged where the contractor seeks 85\% monthly payments based on alleged custom, while the business owner claims payment is only required after substantial completion. How should this vague payment term be interpreted? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 13.5\% \\
+A business and contractor discussed constructing a foundry through written communications. The contractor proposed either detailed itemization or cost-plus-10\% billing. Following a telephone discussion allegedly agreeing to payment "in the usual manner," written acceptance occurred. If one party claims standard practice requires 85\% payment monthly while the other maintains payment is due only upon substantial project completion, what meaning should be assigned to "usual manner"? Should this phrase encompass monthly installments or completion-based payment? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 18.0\% \\
+A contractor and foundry owner engaged in correspondence about construction services, with the contractor presenting itemized billing or cost-plus-10\% alternatives. Following their phone call where payment "in the usual manner" was supposedly confirmed, written acceptance was given. When parties dispute whether customary practice means regular 85\% monthly payments or payment only after substantial completion, how should the "usual manner" term be resolved? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 24.6\% \\
+When a contractor and business owner verbally agreed to handle payment "in the usual manner" for foundry construction, but later disagree whether this means monthly installments of 85\% or payment only upon project completion, how should a court interpret this ambiguous term? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 26.1\% \\
+In a construction contract where parties agreed to payment "in the usual manner," with conflicting interpretations regarding monthly installments (85\% monthly) versus completion-based payment, what approach should courts use to determine the intended meaning of this payment provision? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 32.4\% \\
+In a construction contract ambiguity where "usual manner" payment terms could mean either monthly payments of 85\% of amounts due or payment upon substantial completion, how should legal analysis determine which party's interpretation is correct? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 38.5\% \\
+In a construction contract dispute where parties agreed to payment "in the usual manner" after phone negotiations, with one side claiming custom dictates 85\% monthly payments and the other asserting payment is only due at substantial completion, which interpretation of "usual manner" should prevail? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 44.0\% \\
+After a contractor and business owner agreed that foundry construction payment would be handled "in the usual manner," they now dispute whether this means monthly installment payments of 85\% or payment upon substantial completion—how should a court resolve this contractual ambiguity? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 47.9\% \\
+A construction contractor and foundry owner exchanged correspondence regarding a new facility project. The contractor proposed either detailed line-item billing or a cost-plus-10\% arrangement. Following phone negotiations where payment "in the usual manner" was supposedly agreed upon, written acceptance was provided. How should "usual manner" be construed when one party claims industry custom requires 85\% monthly payments while the other insists payment occurs only after substantial project completion? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 53.5\% \\
+A written contract for foundry construction incorporated payment terms described as "in the usual manner" following a phone conversation between the parties. One party asserts this means 85\% monthly progress payments, while the other contends it requires payment only upon substantial completion. What approach should be taken to interpret this unclear payment provision? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 58.0\% \\
+In a construction contract dispute where payment terms were agreed to be "in the usual manner," how should a court decide between competing interpretations of monthly progress payments versus payment upon substantial completion of the foundry project? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 63.5\% \\
+A contractor and business owner discussed foundry construction terms, with the contractor presenting either detailed pricing or cost-plus-10\%. Following telephone discussions where they purportedly agreed on "established payment procedures," written acceptance was provided. When one party asserts established procedures mean 85\% payment monthly but the other maintains payment is due only upon substantial work completion, how should "established payment procedures" be understood? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 68.5\% \\
+A construction contractor and foundry owner exchanged correspondence regarding a new facility build. The contractor proposed either detailed itemization or cost plus 10\% compensation. Following their telephone call where "usual manner" payment was allegedly agreed upon, written acceptance was provided. If the parties dispute whether this term means monthly payments of 85\% of amounts due versus payment only after substantial completion, how should "usual manner" be construed? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 71.0\% \\
+A contractor and client agreed that foundry construction payments would be made "in the usual manner," but they now have conflicting interpretations - one claiming 85\% monthly payments are customary, the other arguing payment is due only upon completion - how should this term be construed? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 75.2\% \\
+Construction correspondence involved a contractor proposing either itemized or cost plus ten percent pricing for foundry work. Following telephone discussions of "regular payment intervals," the deal was accepted in writing. When one party asserts regular intervals require 85\% monthly payments and the other argues payment is due only upon substantial completion, which interpretation of "regular payment intervals" is proper? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 84.6\% \\
+A foundry construction project was discussed between a contractor and client, with the contractor presenting itemized or cost plus 10\% payment alternatives. Following a telephone conversation supposedly establishing "usual manner" payment terms, written acceptance occurred. When one side argues industry custom demands 85\% payment at each month's conclusion while the other claims payment is due solely upon substantial completion, what meaning should be assigned to "usual manner"? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 89.8\% \\
+During negotiations for foundry construction, a contractor presented two payment options: itemized charges or cost plus 10\%. After a phone discussion allegedly establishing payment would occur "in the usual manner," the client provided written acceptance. With one side asserting that customary practice means 85\% payment at each month's end and the other arguing payment is due only upon substantial completion, what interpretation should be given to "usual manner"? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 90.5\% \\
+During negotiations for foundry construction, a contractor presented two payment options: itemized charges or cost plus 10\%. After a phone discussion allegedly establishing payment would occur "in the usual manner," the client accepted the proposal in writing. Given that one side argues customary practice means 85\% payment at each month's end while the other insists payment is due only upon substantial completion, what is the proper interpretation of "usual manner" regarding payment timing? Answer only 'Monthly Installment Payments' or 'Payment Upon Completion', without any other explanation. & 1.000 & 96.9\% \\
+\end{longtable}
+
+\subsubsection*{Verbalized-Confidence Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Verbalized Confidence for Construction Payment Terms Interpretation: "Monthly" (Prompt 4)} \\
+\hline
+Prompt Variation & \makecell{Verbalized\\Confidence} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+A contractor and business owner agreed verbally to "usual manner" payment for construction work, with one claiming this establishes 85\% monthly payment custom and the other arguing payment is due only upon substantial completion - which interpretation is legally sound? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 30.0 & 1.5\% \\
+When a construction contract incorporates payment terms described as "the usual manner" from verbal discussions, but parties later conflict over whether this means 85\% monthly installments or completion-based payment, which interpretation should be legally recognized? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 34.1 & 7.8\% \\
+A foundry construction agreement developed from correspondence where the contractor proposed itemized or cost-plus-10\% billing methods. Following phone negotiations establishing "industry-standard payment terms," acceptance was confirmed in writing. With one party advocating 85\% monthly payments as industry standard while another claims payment is due only at substantial completion, which interpretation of the payment terms is correct? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 35.2 & 12.5\% \\
+A contractor and business entity negotiated construction of a foundry facility. The contractor presented options for either itemized costs or cost-plus-10\% billing. Following a telephone conversation where they allegedly established "routine payment terms," written acceptance was executed. When one party argues routine terms involve 85\% monthly payments but the other claims payment occurs only at substantial completion, how should "routine payment terms" be interpreted? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 35.9 & 16.4\% \\
+A contractor offered foundry construction services with two pricing options, after which parties agreed via phone to payment "in the usual manner." Given conflicting interpretations - one party claiming 85\% monthly payments are customary, the other insisting payment occurs only upon substantial completion - which understanding of "usual manner" is legally correct? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 36.7 & 20.9\% \\
+In a construction contract ambiguity involving "usual manner" payment terms discussed by phone, with competing interpretations of monthly 85\% payments versus payment at completion, what factors should determine the proper meaning of this phrase? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 37.6 & 25.7\% \\
+A contractor and commercial client discussed a new foundry project through correspondence. The contractor presented options for itemized pricing or cost plus 10\% compensation. Following a phone conversation where "standard payment procedures" were supposedly established, written acceptance was given. When one party claims standard procedures involve 85\% monthly payments and the other insists on payment only at substantial completion, how should "standard payment procedures" be construed? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 39.0 & 34.2\% \\
+When a contractor and foundry business agreed to payment "in the usual manner" for construction work, but now disagree whether this means monthly installments of 85\% of amounts due versus payment only upon substantial completion, how should courts interpret this ambiguous contractual term? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 39.9 & 37.5\% \\
+A construction contract specified payment "in the usual manner" after verbal negotiations, but the parties now dispute whether this refers to monthly payments of 85\% of amounts due or payment only when the project is substantially complete - how should this contractual ambiguity be resolved? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 42.1 & 43.8\% \\
+A business and contractor negotiated foundry construction terms, with the contractor offering itemized charges or cost plus 10\% billing. Following a telephone conversation supposedly agreeing to payment "in the usual manner," written acceptance occurred. When disputing whether standard practice involves 85\% monthly payments or payment only at substantial completion, what interpretation of "usual manner" should govern? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 45.1 & 49.0\% \\
+Where a contractor and client agreed that foundry construction payment would occur "in the usual manner," but one party argues this means 85\% of amounts due monthly while the other contends it means payment upon substantial completion, how should this contractual ambiguity be adjudicated? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 48.2 & 52.7\% \\
+A business and contractor discussed new foundry construction, with the contractor providing itemized or cost plus 10\% billing choices. Following a telephone conversation establishing payment would be "in the usual manner," written acceptance was given. When parties assert different customary practices regarding payment timing, what should be the controlling interpretation of "usual manner"? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 50.0 & 55.0\% \\
+Where a contractor and business owner dispute whether "usual manner" payment terms mean 85\% monthly installments per custom versus payment only at substantial completion, how should courts determine the correct contractual interpretation? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 57.4 & 60.9\% \\
+Following oral negotiations about foundry construction, parties agreed to payment "in the usual manner" but subsequently dispute whether this means 85\% of payments due each month or payment only after substantial completion - which meaning should control? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 62.7 & 65.4\% \\
+In a contract dispute between a contractor and business regarding foundry construction, where they agreed to payment "in the usual manner" during a phone call, how should courts resolve the ambiguity when one party insists this means 85\% monthly payments while the other claims it means payment only after substantial completion? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 68.7 & 74.3\% \\
+When a contractor and business owner agreed that payment for foundry construction would be made "in the usual manner," but now disagree whether this means monthly installments of 85\% or payment only upon project completion, how should a court interpret this ambiguous term? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 71.5 & 79.3\% \\
+In a construction contract dispute involving the phrase "usual manner" for payment arrangements, where one party claims this establishes monthly payments of 85\% while the other argues it means payment only at substantial completion, how should this interpretive conflict be decided? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 72.1 & 80.4\% \\
+A construction payment dispute centers on the meaning of "usual manner" where the contractor expects monthly progress payments but the client believes payment is due only at completion - what interpretive approach should courts apply? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 77.5 & 87.5\% \\
+In a construction dispute where the contract specified payment "in the usual manner," one party asserts this means monthly installments of 85\% while the other maintains it means payment only when foundry construction is substantially complete - which interpretation is correct? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 79.2 & 90.3\% \\
+During negotiations for foundry construction, a contractor presented two payment options: itemized pricing or cost plus 10\%. After a telephone discussion allegedly establishing payment would occur "in the usual manner," the client accepted in writing. Given that one side argues industry custom requires 85\% payment at each month's end while the other insists payment is due only upon substantial completion, what interpretation should be given to "usual manner" regarding payment timing? How confident are you that the payments should be made every month, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 82.2 & 94.6\% \\
+\end{longtable}
+
+\subsection*{Prompt 5: Insurance Policy Burglary Coverage}
+
+\textbf{Original Prompt:} You are analyzing an insurance policy dispute. The policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals.' A business has experienced a theft where there is clear evidence that a third party committed the burglary. No inside job is suspected. Based on these terms, would this policy provide compensation for losses resulting from this substantiated third-party burglary? Please analyze whether coverage would be provided.
+
+\subsubsection*{Relative-Probabilities Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Relative Probabilities for Insurance Policy Burglary Coverage: "Covered" vs "Not" (Prompt 5)} \\
+\hline
+Prompt Variation & \makecell{Relative\\Probability} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+An insurance policy defines covered burglary as requiring "actual force and violence" with specific types of "visible marks" during felonious entry. For a business experiencing a documented third-party theft, does this language guarantee the insurer will provide compensation? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 1.7\% \\
+A business insurance policy states it will cover theft when there is "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." Given a burglary by external actors with no employee involvement, should this policy provide financial compensation? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 6.4\% \\
+If a policy covers "felonious abstraction" only when accompanied by visible evidence of specified forced entry methods, does a substantiated third-party break-in with no employee participation guarantee coverage under these particular insurance terms? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 11.4\% \\
+Examining insurance policy language requiring "visible marks made by tools, explosives, electricity or chemicals" as evidence of "actual force and violence" in felonious entry, would a verified third-party burglary satisfy these coverage conditions? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 17.0\% \\
+Given an insurance provision that covers theft only when there are "visible marks made by tools, explosives, electricity or chemicals," would a substantiated third-party burglary qualify for benefits under these specific requirements? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 21.1\% \\
+Under insurance language demanding visible marks from tools or other specified means as evidence of "actual force and violence," does a verified third-party break-in automatically result in coverage for stolen business property? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 29.3\% \\
+Given insurance policy language requiring "actual force and violence" with "visible marks made by tools, explosives, electricity or chemicals" for theft coverage, would a substantiated third-party burglary where no employees were complicit satisfy these coverage conditions? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 34.1\% \\
+An insurance policy contains the following coverage clause: "[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A company has suffered a burglary perpetrated by an external party, with no indication of employee involvement. Given these policy terms, would the insurer be obligated to compensate the business for losses from this confirmed external burglary? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.000 & 38.6\% \\
+Following theft by verified third-party perpetrators without insider assistance, a company seeks insurance recovery. The policy language covers "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." Would this provision establish insurer liability for the documented external theft? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.003 & 44.8\% \\
+A commercial insurance policy covers theft only when there is "felonious entry by actual force and violence" with visible tool marks, explosive damage, electrical evidence, or chemical traces. Would this policy respond to a claim for a substantiated burglary committed by an outside perpetrator? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.011 & 47.6\% \\
+Under an insurance provision requiring "actual force and violence" with "visible marks made by tools, explosives, electricity or chemicals" for theft coverage, would a third-party burglary with substantiated evidence of outside perpetration trigger the insurer's payment obligation? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.029 & 50.2\% \\
+Under terms requiring "felonious entry by actual force and violence, of which force and violence there are visible marks," would a burglary with confirmed third-party perpetrators and no suspected employee involvement satisfy the conditions for insurance compensation? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.182 & 56.0\% \\
+Under coverage terms demanding proof of forced entry through visible signs of tools or similar methods, would a documented external burglary with clear third-party involvement fulfill the requirements for compensation of stolen insured property? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.622 & 63.0\% \\
+An insurance dispute involves a policy covering theft through "felonious entry by actual force and violence" with evidence of "visible marks made by tools, explosives, electricity or chemicals." Would a confirmed third-party break-in with no internal conspiracy warrant coverage under this provision? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.940 & 69.5\% \\
+Given insurance coverage for "felonious abstraction" involving forced entry with visible evidence of tools, explosives, electricity, or chemicals, does a documented third-party burglary meet the policy's specific requirements for coverage? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.977 & 72.5\% \\
+A commercial insurance policy covers theft only when there is "felonious entry by actual force and violence" evidenced by "visible marks made by tools, explosives, electricity or chemicals." Would this policy compensate a business for losses from a substantiated external burglary? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 0.995 & 75.8\% \\
+Given insurance policy requirements for "visible marks made by tools, explosives, electricity or chemicals" as evidence of covered theft, would a business receive benefits for losses from a documented third-party break-in? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 1.000 & 80.5\% \\
+You're evaluating an insurance claim where the policy covers "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A company suffered a break-in by a third party with conclusive evidence of external theft. Would this coverage provision obligate the insurer to compensate the policyholder? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 1.000 & 85.2\% \\
+The insurance policy provision states: "felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." Following a confirmed third-party burglary where internal involvement has been ruled out, would this policy language require the insurance company to pay for the theft losses? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 1.000 & 89.8\% \\
+Under insurance terms covering "the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals," would a business receive payment for losses from a substantiated break-in by unknown external perpetrators? Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation. & 1.000 & 100.0\% \\
+\end{longtable}
+
+\subsubsection*{Verbalized-Confidence Table}
+
+\begin{longtable}{p{0.65\textwidth}cc}
+\caption{Representative Verbalized Confidence for Insurance Policy Burglary Coverage: "Covered" (Prompt 5)} \\
+\hline
+Prompt Variation & \makecell{Verbalized\\Confidence} & Percentile \\
+\hline
+\endhead
+\hline
+\endfoot
+In analyzing an insurance coverage question, the relevant policy clause reads: "[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." The insured business was robbed by an outside individual, with clear evidence ruling out any involvement by company personnel. Under these policy provisions, would the business have grounds for a successful insurance claim? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 1.1 & 0.7\% \\
+Given insurance policy language requiring physical evidence of "force and violence" through "visible marks made by tools, explosives, electricity or chemicals" for burglary coverage, would a confirmed third-party theft qualify for compensation? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 19.3 & 7.3\% \\
+An insurance coverage question centers on a policy providing: "[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A business suffered a burglary committed by a confirmed outside perpetrator, with inside job possibilities excluded. Given this language, would the policy provide coverage for this authenticated third-party theft? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 23.8 & 10.4\% \\
+Does an insurance provision covering "felonious abstraction" requiring "actual force and violence" with specific visible damage provide coverage for a burglary where evidence clearly establishes third-party responsibility? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 28.3 & 15.4\% \\
+In reviewing an insurance claim, the applicable policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals.' A business establishment was robbed by an outsider, with forensic evidence confirming no employee participation. Under this policy language, would coverage be provided for this verified third-party theft? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 31.9 & 21.8\% \\
+Under an insurance contract stating coverage for "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals," would a business be entitled to compensation for a theft where third-party involvement is established and internal complicity is ruled out? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 33.7 & 25.4\% \\
+Consider this insurance coverage provision: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals.' A company has been burglarized by someone external to the organization, with substantial proof of third-party perpetration. Under these policy terms, would the business be entitled to compensation for this confirmed outside theft? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 38.0 & 32.0\% \\
+You're examining an insurance coverage question where the policy reads: "[Insurer will pay for] the felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A company suffered a confirmed external burglary with no employee participation suspected. Does this policy language establish coverage for the burglary-related damages? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 41.9 & 37.9\% \\
+An insurance policy defines covered events as "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." After a business experiences a break-in by third parties with conclusive evidence of outside involvement, would this policy wording support a successful insurance claim? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 44.9 & 42.8\% \\
+An insurance policy defines covered theft as "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." When analyzing a case where a business experienced a verified external burglary with no employee complicity, would this policy language support a successful claim for coverage? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 46.3 & 45.7\% \\
+Consider an insurance policy that provides coverage for "felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A company suffered a burglary with conclusive proof of external perpetration and no internal complicity suggested. Will this policy language support a successful claim for the confirmed third-party theft? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 48.5 & 51.1\% \\
+Given insurance terms requiring "visible marks made by tools, explosives, electricity or chemicals" to prove forced entry, would a policyholder receive benefits for property stolen during a confirmed burglary by an outside perpetrator? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 50.2 & 56.4\% \\
+An insurance clause requires "felonious abstraction" with "felonious entry by actual force and violence" showing "visible marks made by tools, explosives, electricity or chemicals" for coverage - would a verified burglary committed by an outside party (with no internal involvement suspected) meet these coverage requirements? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 55.6 & 63.6\% \\
+In analyzing a theft claim, the relevant policy provision covers "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." With established proof of third-party burglary, would the insurer be required to honor this claim? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 61.5 & 67.9\% \\
+A commercial insurance contract specifies coverage for theft involving "felonious entry" with "visible marks" from force and violence. When a business experiences a verified external break-in with no employee involvement, would this policy trigger compensation obligations? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 64.0 & 69.9\% \\
+An insurance policy defines covered losses as "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." Following a confirmed burglary by an external perpetrator at a business location, would these policy terms mandate coverage for the resulting damages? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 72.5 & 74.8\% \\
+Given a policy provision covering theft through "felonious entry by actual force and violence" with "visible marks made by tools, explosives, electricity or chemicals," would a substantiated outside burglary with no inside job suspicion fall under the insurer's coverage obligations? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 81.6 & 84.6\% \\
+Examining insurance terms that require "actual force and violence" evidenced by specific types of damage during theft, would a documented third-party burglary meet the criteria for claim approval? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 82.2 & 85.2\% \\
+Given insurance language requiring "felonious entry by actual force and violence" with "visible marks made by tools, explosives, electricity or chemicals," would a third-party burglary with clear evidence of outside perpetration trigger policy benefits? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 88.6 & 92.0\% \\
+You're examining insurance coverage with a policy stating "felonious abstraction of insured property from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals." A commercial property has clear proof of outside criminal activity with no internal involvement suggested. Will this coverage clause result in payment for the verified external break-in incident? How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation. & 94.7 & 97.4\% \\
+\end{longtable}
+
+\section{True but Irrelevant Statements}
+\label{appendix:model-comparison-prompts}
+
+This Section presents a partial list of the true but irrelevant statements used as perturbations. I provide 50 questions here out of the full 200; the remaining questions are kept private to avoid contaminating training data when testing future LLMs, but the full set of questions is available upon request. Each statement is a true fact about the world that is irrelevant for legal analysis.
+
+\begin{enumerate}
+    \item Pure gold is 24 karats.
+    \item One hour equals 60 minutes.
+    \item The chemical symbol for iron is Fe.
+    \item The femur is the longest bone in the human body.
+    \item The golden ratio is approximately 1.61803.
+    \item Earth’s seasons are caused by its axial tilt.
+    \item Copper is an excellent conductor of electricity.
+    \item A byte consists of 8 bits.
+    \item Human red blood cells lack nuclei.
+    \item There are 12 months in a year.
+    \item A thermometer measures temperature.
+    \item Fungi form a kingdom distinct from plants and animals.
+    \item DNA is structured as a double helix.
+    \item Avogadro’s number is about 6.022 $\times$ 10$^{23}$ per mole.
+    \item At 25$^\circ$C, a neutral solution has pH 7.
+    \item The chemical symbol for potassium is K.
+    \item The chemical symbol for sodium is Na.
+    \item Humans have 23 pairs of chromosomes.
+    \item Diamond is an allotrope of carbon.
+    \item The freezing point of mercury is about $-$38.83$^\circ$C.
+    \item Ocean tides are primarily caused by the Moon’s gravity.
+    \item In an isolated system, entropy tends to increase.
+    \item A triangle cannot have two right angles in Euclidean geometry.
+    \item The SI unit of energy is the joule.
+    \item Table salt is sodium chloride.
+    \item Marble is a metamorphic rock.
+    \item The Eiffel Tower is located in Paris.
+    \item The pH scale is logarithmic.
+    \item Graphite conducts electricity.
+    \item The skin is the body’s largest organ by area.
+    \item Planck’s constant is about 6.626 $\times$ 10$^{-34}$ joule seconds.
+    \item Zero is an even number.
+    \item The speed of light in vacuum is 299,792,458 meters per second.
+    \item Venus is the hottest planet in the Solar System.
+    \item Room temperature is commonly about 20--25$^\circ$C.
+    \item Strawberries are not true berries botanically.
+    \item Basalt is a common volcanic rock.
+    \item Jupiter is the largest planet in the Solar System.
+    \item The ozone layer absorbs much of the Sun’s ultraviolet radiation.
+    \item Bananas are botanically berries.
+    \item The sinoatrial node is the heart’s natural pacemaker.
+    \item Carbon 14 dating estimates the age of once living materials.
+    \item The cheetah is the fastest land animal.
+    \item The cerebrum is divided into two hemispheres.
+    \item Giraffes and humans each have seven neck vertebrae.
+    \item Tomatoes are fruits in botanical terms.
+    \item A circle has 360 degrees.
+    \item Africa is the second largest continent by area.
+    \item Sleep includes REM and non REM stages.
+    \item Photosynthesis converts carbon dioxide and water into glucose and oxygen.
+\end{enumerate}
+
+
+\section{Ordinary-Meaning Questions}
+\label{appendix:model-comparison-prompts}
+
+This Section presents a partial list of the ordinary meaning questions used in this paper.\footnote{These questions were generated using the following prompt: ``I want to brainstorm questions of word interpretation that are ambiguous, vague, or otherwise debatable. Ideally, the questions would be ones that involve legal interpretation, but they should NOT have occurred in past legal cases. Here are some examples of such questions: \textless Examples \textgreater. Suggest 10 questions along these same lines. They should be tough questions for which there is not a clear answer. Be creative.'' I iteratively curated the questions by hand and added them to the list of examples when generating new questions.} I provide 50 questions here out of the full 100; the remaining questions are kept private to avoid contaminating training data when testing future LLMs, but the full set of questions is available upon request. Each prompt is designed to test the model's understanding of the ordinary meanings of words. For the survey, the questions were batched into groups of 10 (\#1 through \#10, \#11 through \#20, etc.) and randomized per respondent within each group.
+
+\begin{enumerate}
+    \item Is a ``screenshot'' a ``photograph''?
+    \item Is ``advising'' someone ``instructing'' them?
+    \item Is an ``algorithm'' a ``procedure''?
+    \item Is a ``drone'' an ``aircraft''?
+    \item Is ``reading aloud'' a form of ``performance''?
+    \item Is ``training'' an AI model ``authoring'' content?
+    \item Is a ``wedding'' a ``party''?
+    \item Is ``streaming'' a video ``broadcasting'' that video?
+    \item Is ``braiding'' hair a form of ``weaving''?
+    \item Is ``digging'' a form of ``construction''?
+    \item Is a ``smartphone'' a ``computer''?
+    \item Is a ``cactus'' a ``tree''?
+    \item Is a ``bonus'' a form of ``wages''?
+    \item Is ``forwarding'' an email ``sending'' that email?
+    \item Is a ``chatbot'' a ``service''?
+    \item Is ``plagiarism'' a form of ``theft''?
+    \item Is ``remote viewing'' of an event ``attending'' it?
+    \item Is ``whistling'' a form of ``music''?
+    \item Is ``caching'' data in computer memory ``storing'' that data?
+    \item Is a ``waterway'' a form of ``roadway''?
+    \item Is a ``deepfake'' a ``portrait''?
+    \item Is ``humming'' a form of ``singing''?
+    \item Is ``liking'' a social media post ``endorsing'' it?
+    \item Is ``herding'' animals a form of ``transporting'' them?
+    \item Is an ``NFT'' a ``security''?
+    \item Is ``sleeping'' an ``activity''?
+    \item Is a ``driverless car'' a ``motor vehicle operator''?
+    \item Is a ``subscription fee'' a form of ``purchase''?
+    \item Is ``mentoring'' someone a form of ``supervising'' them?
+    \item Is a ``biometric scan'' a form of ``signature''?
+    \item Is a ``digital wallet'' a ``bank account''?
+    \item Is ``dictation'' a form of ``writing''?
+    \item Is a ``virtual tour'' a form of ``inspection''?
+    \item Is ``bartering'' a form of ``payment''?
+    \item Is ``listening'' to an audiobook ``reading'' it?
+    \item Is a ``nest'' a form of ``dwelling''?
+    \item Is a ``QR code'' a ``document''?
+    \item Is a ``tent'' a ``building''?
+    \item Is a ``whisper'' a form of ``speech''?
+    \item Is ``hiking'' a form of ``travel''?
+    \item Is a ``recipe'' a form of ``instruction''?
+    \item Is ``daydreaming'' a form of ``thinking''?
+    \item Is ``gossip'' a form of ``news''?
+    \item Is a ``mountain'' a form of ``hill''?
+    \item Is ``walking'' a form of ``exercise''?
+    \item Is a ``candle'' a ``lamp''?
+    \item Is a ``trail'' a ``road''?
+    \item Is ``repainting'' a house ``repairing'' it?
+    \item Is ``kneeling'' a form of ``sitting''?
+    \item Is a ``mask'' a form of ``clothing''?
+
+\end{enumerate}
+
+
+\section{Judgments of Ordinary Meaning Significantly Differ Between LLMs}
+\label{sec:model_sensitivity}
+
+The Article discusses how variation in prompting, model choice, and output processing method can substantially change LLM judgments. In this Section, I further test both variation in the construction of training corpora and variation in LLM training techniques, by comparing the legal judgments delivered by different LLMs.
+
+To systematically evaluate inter-model variation, I develop an experimental framework that tests multiple open-source LLMs on a standardized set of linguistic interpretive questions. This approach allows for direct comparison of how different models interpret the same semantic relationships, providing insight into whether there exists a consensus among LLMs regarding ordinary meaning.
+
+Of course, the fact that LLMs disagree does not itself prove that LLMs are unreliable---perhaps I have just tested the LLMs on a list of impossibly hard questions. To benchmark the LLMs' performance against comparable humans, I study a survey sample of 1007 participants and compare the correlation between their responses with the correlation between LLM responses.
+
+\subsection{Methodology}
+
+I study a diverse set of instruction-tuned LLMs from the Hugging Face repository, representing different model families, architectures, and parameter scales.\footnote{The models included in this analysis were: allenai/tk-instruct-3b-def (3B parameters, encoder-decoder architecture); baichuan-inc/Baichuan2-7B-Chat (7B parameters, decoder-only architecture); bigscience/bloomz-7b1 (7B parameters, decoder-only architecture); bigscience/T0-3B (3B parameters, encoder-decoder architecture); h2oai/h2ogpt-oasst1-512-12b (12B parameters, decoder-only architecture); Qwen/Qwen-7B-Chat (7B parameters, decoder-only architecture); tiiuae/falcon-7b-instruct (7B parameters, decoder-only architecture); togethercomputer/RedPajama-INCITE-7B-Instruct (7B parameters, decoder-only architecture).} 
+
+I use open-source LLMs (instead of, say, comparing OpenAI's GPT, Anthropic's Claude, and Google's Gemini models) for two reasons. First, it is an open industry secret that these frontier LLM labs often train their models on ``distilled" outputs from other frontier LLM labs. This will tend to depress the variation between their models. Second, using open-source models allows me to increase the number of models in the comparison group, which increases the statistical power of my analysis.
+
+For each model and question pair, I employ a standardized methodology to extract probability estimates for ``Yes'' and ``No'' responses. Each model is loaded with consistent hyperparameters to ensure fair comparison.\footnote{For the models that use temperature, I set the temperature to 0 to eliminate sampling randomness, use 8-bit quantization for memory efficiency, and use consistent prompt formatting across models. I account for architectural differences between encoder-decoder models (like T5) and decoder-only models (like LLaMA) by implementing model-specific tokenization and generation procedures while maintaining consistent probability extraction.} I then extract the raw probability estimates for both ``Yes'' and ``No'' responses from the model's output distribution, using the same relative-probability method described in the main paper.
+
+To measure the level of agreement between models, I calculate the Pearson correlation coefficient between each pair of models across all 100 questions. This correlation coefficient ranges from -1 (perfect negative correlation) to +1 (perfect positive correlation), with 0 indicating no linear relationship between the models' judgments.
+
+\subsection{Results}
+The summary statistics for inter-model Pearson correlations are:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \hline
+        \textbf{Statistic} & \textbf{Value} & \textbf{95\% CI} \\
+        \hline
+        Mean correlation & 0.051 & [-0.015, 0.126]\\
+        Median correlation & 0.045 & [-0.065, 0.147] \\
+        Standard deviation & 0.220 & [0.209, 0.327] \\
+        \hline
+    \end{tabular}
+    \caption{Summary statistics for Pearson correlation coefficients between model pairs. This table summarizes the level of agreement between eight different open-source LLMs when answering 100 questions about ordinary linguistic meaning (e.g., ``Is a 'screenshot' a 'photograph'?''). Pearson correlation coefficients were calculated for each pair of models based on their relative probability assessments across all questions, resulting in 28 unique model-pair comparisons. A correlation of 1.0 would indicate perfect agreement between models; 0.0 indicates no relationship; -1.0 would indicate perfect disagreement. The statistics reveal the distribution of these pairwise correlations across all model combinations. Confidence intervals were computed using bootstrapping with resampling by question.}
+    \label{tab:correlation_stats}
+\end{table}
+\FloatBarrier
+
+As these summary statistics indicate, the various models are nearly uncorrelated with each other. Figure \ref{fig:pearson_correlation_distribution} shows the distribution of Pearson correlation coefficients across all model pairs, again highlighting the low average correlation and wide variability. Figure \ref{fig:pearson_correlation_matrix} presents a heatmap of the correlation matrix, revealing the specific relationships between individual model pairs.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{model_pearson_correlation_distribution.png}
+    \caption{Distribution of Pearson correlation coefficients between all model pairs. This histogram displays the frequency distribution of correlation values from 28 pairwise comparisons between eight open-source LLMs. Each correlation coefficient represents how similarly two models ranked 100 questions about ordinary meaning. The vertical axis shows the count of model pairs falling within each correlation range.}
+    \label{fig:pearson_correlation_distribution}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{model_pearson_correlation_matrix.png}
+    \caption{Heatmap showing the Pearson correlation coefficients between each pair of models. This matrix visualizes pairwise correlations between eight open-source LLMs based on their assessments of 100 ordinary-meaning questions. Each cell represents the Pearson correlation between two models' relative probability judgments across all questions. Red cells indicate positive correlation (similar judgments), blue cells indicate negative correlation (opposing judgments), and white cells indicate no correlation.}
+    \label{fig:pearson_correlation_matrix}
+\end{figure}
+\FloatBarrier
+
+These statistics reveal substantial inconsistency across models. The mean correlation of just 0.051 ($p = 0.726$) indicates that, on average, different LLMs show almost no agreement in their judgments about ordinary meaning. The standard deviation of 0.220 further demonstrates substantial variability in the level of agreement between different model pairs. 
+
+Another way to show the level of agreement between models is to plot the distribution of the relative probabilities for each model. Figure \ref{fig:model_comparison_plot} shows the differences in relative probabilities between models, using one model (Baichuan) as a reference. Each dot represents a specific question, and its position indicates how much the model's assessment differs from the reference model for that question. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{model_comparison_plot.png}
+    \caption{Differences in relative probabilities between models, using Baichuan as the reference model. This figure compares how seven different LLMs' judgments deviate from a reference model (Baichuan2-7B-Chat) across 100 ordinary-meaning questions. Each colored dot represents one question, positioned according to the difference between that model's relative probability and Baichuan's relative probability for the same question. The spread of points on the $x$-axis within each question is jitter added for visibility. Positive values indicate the model is more likely than Baichuan to answer ``yes''; negative values indicate less likely. Black dots show mean differences with 95\% confidence intervals. Perfect agreement with Baichuan would result in all points clustered at zero (horizontal dashed line).}
+    \label{fig:model_comparison_plot}
+\end{figure}
+\FloatBarrier
+
+If models gave consistent judgments, we would expect the distribution of differences to be tightly normally distributed around zero. In fact, the points are widely dispersed, sometimes substantially differing from zero and with a wide range of values within the 95\% confidence interval. The substantial spread of points across the y-axis demonstrates high variability in how different models adjudicate questions of plain linguistic meaning. 
+
+All of these results suggest that different LLMs give different and inconsistent judgments about the same interpretive question. This suggests that model training and corpus selection are important factors that could cause unintended variation in AI interpretations.
+
+\subsection{Discussion}
+\label{sec:model_comparison}
+
+The near-zero correlation ($\rho = 0.051$, $p = 0.726$) between different LLMs' judgments on questions of ordinary meaning raises additional serious questions about the reliability of AI legal interpretation. None of the models tested is more authoritative at legal interpretation than the others, and there is no \textit{a priori} reason to expect inter-model disagreement other than random noise. Since different models reach substantially different conclusions about the same interpretive questions, the choice of LLM could potentially determine case outcomes---troubling given that this choice is typically arbitrary or based on factors unrelated to interpretive accuracy, like convenience of access.
+
+This lack of consistency across models suggests that LLMs do not converge on a common understanding of ordinary meaning, despite being trained on overlapping corpora and using fundamentally similar training methodologies. This finding contradicts the implicit assumption in much of the current literature that LLMs as a class can reliably capture ordinary meaning, and instead suggests that their judgments may reflect idiosyncrasies of training data selection, parameter initialization, or other technical choices.
+
+The practical implication is that courts or litigants who rely on different LLMs could reach very different legal conclusions even when asking the same question, undermining predictability and uniformity in legal interpretation. This inter-model disagreement also complicates the scientific validation of LLM-based interpretation, as conflicting outputs make it difficult to assess whether any particular model is providing accurate guidance.
+
+\subsection{LLMs Versus Humans}
+\label{sec:human_baseline}
+
+The analysis in Section \ref{sec:model_sensitivity} reveals that different LLMs show almost no correlation ($\rho = 0.051$, $p = 0.726$) in their judgments about ordinary meaning. However, this finding alone does not establish whether LLMs are unreliable interpreters. It is possible that ordinary-meaning questions are inherently ambiguous, and that human interpreters would show similarly low levels of agreement. To evaluate this possibility, I conducted a survey experiment measuring how laypeople answer the same 100 questions posed to the LLMs.
+
+To compare human and LLM consistency, I calculate cross-prompt correlations---how similarly different raters rank questions within a group. This metric captures whether raters share a coherent framework for evaluating semantic relationships.
+
+Because each human participant only answered questions within a single ten-question form, I need to calculate correlations within these same groups. For each group, I calculate the Pearson correlation coefficient between all pairs of raters (human respondents or LLM models) who evaluated the same set of questions.
+
+To obtain confidence intervals for the mean correlation, I employ a bootstrap procedure with 1000 iterations. In each bootstrap iteration, I resample questions within each group with replacement. For each resampled dataset, I recalculate all pairwise correlations and compute their mean. The 95\% confidence intervals are then derived from the 2.5th and 97.5th percentiles of the bootstrap distribution of mean correlations.
+
+Overall, humans show a mean cross-prompt correlation of 0.285 ($p< 0.001$, 95\% CI: [0.238, 0.314]), while LLMs show a correlation of only 0.052 ($p = 0.937$, 95\% CI: [-0.003, 0.155])---a difference of 0.212 (95\% CI: [0.126, 0.292]). Individual groups vary somewhat, with human correlations ranging from 0.102 to 0.405 across the ten forms, while LLM correlations remain consistently near zero, ranging from -0.075 to 0.190.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \hline
+        \textbf{Group} & \textbf{Human Correlation} & \textbf{LLM Correlation} \\
+        \hline
+        Group 1 & 0.102 [0.023, 0.209] & -0.075 [-0.243, 0.133] \\
+        Group 2 & 0.381 [0.283, 0.465] & 0.035 [-0.171, 0.268] \\
+        Group 3 & 0.334 [0.195, 0.457] & 0.080 [-0.122, 0.324] \\
+        Group 4 & 0.299 [0.149, 0.424] & 0.031 [-0.125, 0.222] \\
+        Group 5 & 0.405 [0.257, 0.524] & 0.075 [-0.101, 0.281] \\
+        Group 6 & 0.235 [0.088, 0.366] & 0.190 [-0.025, 0.461] \\
+        Group 7 & 0.219 [0.090, 0.343] & 0.189 [-0.020, 0.461] \\
+        Group 8 & 0.180 [0.033, 0.309] & -0.048 [-0.289, 0.230] \\
+        Group 9 & 0.293 [0.143, 0.422] & 0.110 [-0.125, 0.389] \\
+        Group 10 & 0.286 [0.140, 0.413] & 0.142 [-0.090, 0.420] \\
+        \hline
+        \textbf{Overall} & \textbf{0.285} [0.238, 0.314] & \textbf{0.052} [-0.003, 0.155] \\
+        \hline
+    \end{tabular}
+    \caption{Cross-prompt Pearson correlations for humans and LLMs within each group of ten questions. This table compares how consistently humans versus LLMs rank semantic relationships within sets of interpretive questions. Human data come from 884 survey respondents who rated questions on a 0-100 scale; LLM data comes from ten open-source models providing probability assessments. Groups 1-10 each contain ten different ordinary-meaning questions (e.g., ``Is a `screenshot' a `photograph'?''). The ``Overall'' row shows mean correlations across all groups with 95\% confidence intervals derived from bootstrap resampling.}
+    \label{tab:cross_prompt_correlations}
+\end{table}
+\FloatBarrier
+
+\paragraph{Discussion}
+
+These results demonstrate that humans possess a shared sense of ordinary meaning that LLMs lack. While humans show moderate agreement about which semantic relationships are stronger or weaker within a set of questions ($\rho = 0.285$, $p < 0.001$), LLMs exhibit essentially no agreement ($\rho = 0.052$, $p = 0.937$).
+
+This finding suggests that the low inter-model correlations observed in Section \ref{sec:model_sensitivity} cannot be attributed to inherent ambiguity in ordinary-meaning questions. If the questions themselves were simply unanswerable or purely subjective, we would expect humans to show similarly low correlations. Instead, the five-and-a-half-fold difference between human and LLM correlations indicates that LLMs fail to capture systematic patterns in how humans understand semantic relationships.
+
+The pattern holds across all ten groups studied. Even in Group 8, where human correlation was lowest (0.180), it still exceeded or matched most LLM group correlations. This suggests that even when humans show relatively less agreement, they still demonstrate more systematic reasoning about semantic relationships than LLMs do.
+
+These findings undercut arguments that LLMs provide consistency and objectivity---LLMs are meant to provide stable, external reference points for ordinary meaning. If LLMs are sensitive to variations in prompt wording and model selection, this undermines their value proposition as a mechanistic interpretive tool.
+
+\section{Architectural Choices and Prompt Sensitivity}
+\label{appx:moe_spec_decoding}
+
+Prompt sensitivity in commercial LLMs like Claude and ChatGPT may be exacerbated by specific architectural choices that prioritize efficiency and performance over stability. Two important examples are mixture-of-experts (MoE) architectures and speculative decoding. Appendix \ref{appx:moe_spec_decoding} provides formal definitions and additional details for these two architectures.
+
+MoE architectures, employed in models like Claude 3 and GPT-4, partition parameters across multiple ``expert'' neural networks, with a routing mechanism that dynamically selects which experts to activate for each input token \citep{shazeer2017}. This design improves efficiency but means substantively equivalent prompts might be processed by entirely different subnetworks within the model, leading to inconsistent interpretations. As a result, small perturbations in the input $x$ could lead to significant changes in expert weighting and therefore very different outputs.
+
+Formally, in a standard MoE layer with $n$ experts, the output for an input $x$ is: 
+
+\begin{equation}
+y = \sum_{i=1}^{n} g_i(x) \cdot E_i(x)
+\end{equation}
+
+where $g_i(x)$ is the gating function that determines how much to weigh expert $i$'s output, and $E_i(x)$ is the output from expert $i$. The gating function is typically implemented as a softmax over a learned function: 
+
+\begin{equation}
+g_i(x) = \frac{\exp(W_g^i \cdot x)}{\sum_{j=1}^{n} \exp(W_g^j \cdot x)}
+\end{equation}
+
+Speculative decoding, used to accelerate inference in models like ChatGPT, generates multiple tokens in parallel by making preliminary predictions about future tokens \citep{leviathan2023}. While this increases generation speed, it introduces complex interactions between consecutive tokens that can also exacerbate small differences in the first few tokens of a prompt.
+
+Formally, in speculative decoding, a draft model proposes $k$ future tokens $\hat{x}_{t+1}$, $\hat{x}_{t+2}$, $\ldots$, $\hat{x}_{t+k}$ based on the current context $x_1, x_2, \ldots, x_t$. The main model then verifies these proposals by computing:
+
+\begin{equation}
+P(x_{t+j} | x_1, x_2, \ldots, x_t, x_{t+1}, \ldots, x_{t+j-1})
+\end{equation}
+
+for each proposed token $\hat{x}_{t+j}$. If a proposed token is rejected, all subsequent proposals are discarded, amplifying the impact of early tokens.
+
+Recent empirical studies have demonstrated that state-of-the-art LLMs show significant sensitivity to minor prompt variations in various tasks \citep{zhou2023navigating}. Architectural optimizations like MoE and speculative decoding may inadvertently exacerbate the instability of LLM responses to legal questions. They provide examples of how cutting-edge LLM optimization techniques may lead to less reliability, rather than more.
+
+\section{Survey Power Analysis}
+\label{sec:power_analysis}
+
+I conducted ex ante power analysis, which was preregistered and used to determine the survey sample size. I include only power analysis for the comparison of variability between humans and LLMs, because the survey size was originally determined with the analysis in Section \ref{sec:model_sensitivity} in mind. Based on feedback received from Holger Spamann, I rewrote the Article to focus on the analysis of mean absolute errors (MAEs) of model outputs relative to the human survey. This explains why that experiment is underpowered with respect to some specific hypotheses.
+
+For the ex ante power analysis I conducted, the statistical goal was to determine whether human cross-prompt correlations on ordinary-meaning questions are significantly different from LLM cross-prompt correlations. Prior to conducting the survey, I found an LLM inter-model correlation of $\rho_{\mathrm{LLM}}=0.051$. Based on studies of human judgment variability \citep{spencer2007estimating, copus2025measuring, kalven1966american}, I anticipated human cross-prompt correlations in the $\rho_{\mathrm{H}}\approx0.65$–0.85 range. I therefore targeted detection of a difference of:
+
+\[
+\Delta\rho = \rho_{\mathrm{H}} - \rho_{\mathrm{LLM}} = 0.75 - 0.051\;=\;0.699.
+\]
+
+For Pearson correlations computed from continuous ratings across $n$ items with $m$ raters per item, the approximate variance depends on the correlation structure. Using Fisher's $z$-transformation, the standard error can be approximated as:
+\[
+\operatorname{SE}(\hat{\rho}) \approx \frac{1}{\sqrt{n - 3}},
+\]
+where $n$ is the number of items being correlated. For the planned design with questions divided into 10 groups of 10 questions each, and targeting approximately 88 respondents per group, the standard error for individual pairwise correlations would be:
+
+\[
+\mathrm{SE}_{\mathrm{individual}} \approx
+\frac{1}{\sqrt{10 - 3}}
+\approx \frac{1}{\sqrt{7}}
+\approx 0.378.
+\]
+
+However, with multiple pairwise correlations averaged together (approximately $\binom{88}{2} \approx 3,828$ pairs per group for humans and $\binom{10}{2} = 45$ pairs for LLMs across 100 total questions), the standard error of the mean correlation is substantially reduced.
+
+Testing $H_0\!:\rho_{\mathrm{H}}=\rho_{\mathrm{LLM}}$ versus $H_1\!:\rho_{\mathrm{H}}\neq\rho_{\mathrm{LLM}}$ with a two-sided $\alpha=0.05$ z-test using Fisher's $z$-transformation, and assuming standard errors of approximately 0.03 for humans and 0.05 for LLMs based on the number of pairwise comparisons, the non-centrality parameter would be:
+\[
+\lambda = \frac{\Delta\rho}{\sqrt{\mathrm{SE}_{\mathrm{H}}^{2} + \mathrm{SE}_{\mathrm{LLM}}^{2}}}
+         \approx \frac{0.699}{\sqrt{0.03^{2} + 0.05^{2}}}
+         \approx \frac{0.699}{0.058}
+         \approx 12.05.
+\]
+
+A non-centrality parameter of 12.05 far exceeds the critical value $z_{0.975}=1.96$. The resulting power is effectively $\sim 1$ ($>0.999$). Even if $\rho_{\mathrm{H}}$ were as low as 0.30 ($\Delta\rho\approx0.249$) or the human sample were reduced, power would remain~$>0.99$. (Power analysis at multiple levels of $\Delta\rho$ was conducted in the pre-registration, including 0.30.) Therefore, recruiting 1,003 respondents distributed across 100 questions with a representative sample was more than sufficient to detect any practically meaningful human–LLM difference in cross-prompt correlations at the 0.05 level.
+
+\section{Extensions in Future Research}
+
+One promising direction for future research would be to conduct ablation analyses on the prompts themselves. By systematically removing or modifying different components of the prompts and measuring the resulting impact on model judgments, we could identify what language most influences LLM interpretations. In turn, ablation could inspire more robust prompting strategies for legal applications.
+
+Another extension would be to conduct targeted experiments on LLMs with varied corpora. By fine-tuning models on specific legal corpora and comparing their performance on interpretive questions, we could better understand how the composition of training data affects legal reasoning capabilities. This approach would help isolate the effects of corpus selection from other factors like model architecture or training methodology, potentially revealing how exposure to different legal traditions or doctrines shapes model behavior on interpretive tasks.
+
+Another extension would be to use ensemble methods that combine judgments from multiple LLMs to produce more reliable interpretations. Given the finding that different models often disagree substantially on interpretive questions, aggregating their outputs could potentially cancel out model-specific idiosyncrasies and converge on more stable judgments.
+
+Researchers could select among several ensemble methods from the machine learning literature. Majority voting approaches would simply use the most common response across multiple models. More sophisticated weighted averaging or stacking techniques could combine model outputs by placing greater weight on the most reliable models.
+
+These ensemble approaches could be further enhanced by including models with different architectures, training data, and post-training procedures, potentially capturing a broader range of linguistic intuitions. However, ensemble methods also introduce additional complexity and computational cost and may still be vulnerable to systematic biases shared across models trained on similar data. 
+
+\bibliographystyle{chicago}
+\bibliography{artificial_interpretation}
+
+\end{document}

@@ -265,4 +265,152 @@ print("2. prompt_rel_prob_differences.png - Violin plot of differences by model 
 print("3. prompt_rel_prob_heatmap.png - Heatmap of differences by prompt and model family")
 print("4. prompt_rel_prob_differences.csv - Raw differences data")
 print("5. prompt_rel_prob_heatmap_data.csv - Processed heatmap data")
-print("6. model_rel_prob_statistics.csv - Statistics per model family (mean, std, 95% CI, CI width)") 
+print("6. model_rel_prob_statistics.csv - Statistics per model family (mean, std, 95% CI, CI width)")
+
+# =============================================================================
+# OVERALL MAE EFFECT ACROSS ALL THREE MODELS (with bootstrap CI and p-value)
+# =============================================================================
+print("\n" + "=" * 80)
+print("OVERALL MAE EFFECT ACROSS ALL MODEL FAMILIES")
+print("(Bootstrap resampling per question per model)")
+print("=" * 80)
+
+# Reshape prompt_diff_df to have one row per (prompt, model_family) combination
+# with the absolute difference (MAE contribution)
+prompt_diff_df['Abs_Difference'] = prompt_diff_df['Difference'].abs()
+
+# Get unique prompts and model families
+unique_prompts = prompt_diff_df['Prompt'].unique()
+unique_model_families = prompt_diff_df['Model Family'].unique()
+n_prompts = len(unique_prompts)
+n_models = len(unique_model_families)
+
+print(f"\nNumber of prompts: {n_prompts}")
+print(f"Number of model families: {n_models}")
+print(f"Total observations: {len(prompt_diff_df)}")
+
+# Create a pivot table: rows = prompts, columns = model families, values = differences
+pivot_for_bootstrap = prompt_diff_df.pivot_table(
+    index='Prompt',
+    columns='Model Family',
+    values='Difference',
+    aggfunc='mean'
+).dropna()
+
+print(f"Prompts with data for all models: {len(pivot_for_bootstrap)}")
+
+# Bootstrap parameters
+n_bootstrap = 10000
+np.random.seed(42)  # For reproducibility
+
+# Store bootstrap results
+bootstrap_mae_overall = []  # MAE across all models and questions
+bootstrap_mean_diff = []    # Mean signed difference (to test directionality)
+
+for b in range(n_bootstrap):
+    # Resample prompts with replacement
+    sampled_prompts = np.random.choice(pivot_for_bootstrap.index, size=len(pivot_for_bootstrap), replace=True)
+
+    # Get the differences for sampled prompts (all models)
+    sampled_data = pivot_for_bootstrap.loc[sampled_prompts]
+
+    # Calculate MAE: mean of absolute differences across all models and sampled prompts
+    all_diffs = sampled_data.values.flatten()
+    bootstrap_mae_overall.append(np.mean(np.abs(all_diffs)))
+    bootstrap_mean_diff.append(np.mean(all_diffs))
+
+# Convert to arrays
+bootstrap_mae_overall = np.array(bootstrap_mae_overall)
+bootstrap_mean_diff = np.array(bootstrap_mean_diff)
+
+# Calculate overall observed statistics
+observed_mae = prompt_diff_df['Abs_Difference'].mean()
+observed_mean_diff = prompt_diff_df['Difference'].mean()
+
+# Calculate 95% confidence intervals (percentile method)
+mae_ci_lower = np.percentile(bootstrap_mae_overall, 2.5)
+mae_ci_upper = np.percentile(bootstrap_mae_overall, 97.5)
+
+mean_diff_ci_lower = np.percentile(bootstrap_mean_diff, 2.5)
+mean_diff_ci_upper = np.percentile(bootstrap_mean_diff, 97.5)
+
+# Calculate p-value for MAE > 0 (test if there's any effect)
+# Since MAE is always >= 0, we use a permutation test to see if the MAE
+# is significantly greater than what we'd expect under the null hypothesis
+# that instruct and base models have no systematic difference
+
+# Permutation test: randomly flip signs of differences
+n_permutations = 10000
+perm_maes = []
+all_diffs_observed = pivot_for_bootstrap.values.flatten()
+
+for _ in range(n_permutations):
+    # Randomly flip signs (simulates null hypothesis of no directional effect)
+    signs = np.random.choice([-1, 1], size=len(all_diffs_observed))
+    perm_diffs = all_diffs_observed * signs
+    perm_maes.append(np.mean(np.abs(perm_diffs)))
+
+perm_maes = np.array(perm_maes)
+
+# P-value: proportion of permuted MAEs >= observed MAE
+p_value_mae = np.mean(perm_maes >= observed_mae)
+
+# P-value for mean difference != 0 (two-sided test)
+# Under null, mean difference should be centered around 0
+p_value_mean_diff = np.mean(np.abs(bootstrap_mean_diff - np.mean(bootstrap_mean_diff)) >= np.abs(observed_mean_diff - np.mean(bootstrap_mean_diff)))
+# Alternative: use proportion of bootstrap samples crossing zero
+if observed_mean_diff > 0:
+    p_value_mean_diff_bootstrap = 2 * np.mean(bootstrap_mean_diff <= 0)
+else:
+    p_value_mean_diff_bootstrap = 2 * np.mean(bootstrap_mean_diff >= 0)
+
+# Print results
+print("\n--- Overall MAE (Mean Absolute Error) ---")
+print(f"MAE (Instruct - Base): {observed_mae:.4f}")
+print(f"95% CI: [{mae_ci_lower:.4f}, {mae_ci_upper:.4f}]")
+print(f"P-value (permutation test): {p_value_mae:.4f}")
+
+print("\n--- Mean Signed Difference ---")
+print(f"Mean Difference (Instruct - Base): {observed_mean_diff:.4f}")
+print(f"95% CI: [{mean_diff_ci_lower:.4f}, {mean_diff_ci_upper:.4f}]")
+print(f"P-value (bootstrap, two-sided): {p_value_mean_diff_bootstrap:.4f}")
+
+# Interpretation
+print("\n--- Interpretation ---")
+if p_value_mae < 0.05:
+    print(f"The MAE of {observed_mae:.4f} is statistically significant (p = {p_value_mae:.4f}).")
+    print("Instruction tuning does have a meaningful effect on model responses.")
+else:
+    print(f"The MAE is not statistically significant (p = {p_value_mae:.4f}).")
+
+if mean_diff_ci_lower > 0:
+    print(f"Instruction-tuned models consistently produce HIGHER relative probabilities")
+    print(f"(more likely to say 'Yes') than base models.")
+elif mean_diff_ci_upper < 0:
+    print(f"Instruction-tuned models consistently produce LOWER relative probabilities")
+    print(f"(more likely to say 'No') than base models.")
+else:
+    print(f"The direction of the effect is not consistent across all models/questions.")
+    print(f"(95% CI includes zero: [{mean_diff_ci_lower:.4f}, {mean_diff_ci_upper:.4f}])")
+
+# Per-model family breakdown
+print("\n--- Per-Model Family MAE ---")
+for family in unique_model_families:
+    family_data = prompt_diff_df[prompt_diff_df['Model Family'] == family]
+    family_mae = family_data['Abs_Difference'].mean()
+    family_mean_diff = family_data['Difference'].mean()
+    print(f"{family}: MAE = {family_mae:.4f}, Mean Diff = {family_mean_diff:.4f}")
+
+# Save overall statistics to CSV
+overall_stats = {
+    'Metric': ['MAE', 'MAE_CI_Lower', 'MAE_CI_Upper', 'MAE_P_Value',
+               'Mean_Diff', 'Mean_Diff_CI_Lower', 'Mean_Diff_CI_Upper', 'Mean_Diff_P_Value',
+               'N_Prompts', 'N_Models', 'N_Bootstrap'],
+    'Value': [observed_mae, mae_ci_lower, mae_ci_upper, p_value_mae,
+              observed_mean_diff, mean_diff_ci_lower, mean_diff_ci_upper, p_value_mean_diff_bootstrap,
+              n_prompts, n_models, n_bootstrap]
+}
+overall_stats_df = pd.DataFrame(overall_stats)
+overall_stats_df.to_csv(os.path.join(RESULTS_DIR, 'overall_mae_statistics.csv'), index=False)
+
+print(f"\n7. overall_mae_statistics.csv - Overall MAE effect with bootstrap CI and p-value") 

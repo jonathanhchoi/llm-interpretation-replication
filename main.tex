@@ -1,0 +1,1028 @@
+\documentclass[12pt]{article}
+\usepackage{amsfonts}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage[margin=1.25in]{geometry}
+\usepackage{natbib}
+\setcitestyle{aysep={}} 
+\usepackage{longtable}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{makecell}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{placeins}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\setlist[enumerate]{itemsep=0pt, parsep=0pt}
+\usepackage{setspace}
+\singlespacing
+\usepackage{footmisc}
+% \renewcommand{\footnotelayout}{\doublespacing}
+\setlength{\footnotesep}{0.5\baselineskip}  % Add this line
+
+\usepackage{comment}
+\usepackage[font=normal,labelfont=bf,skip=6pt]{caption}  % Add caption package with reduced skip
+
+% Add more space between paragraphs
+% \setlength{\parskip}{0.5em}  % Add 1em space between paragraphs
+
+\setcounter{secnumdepth}{5}
+
+
+\title{Off-the-Shelf Large Language Models Are Unreliable Judges}
+\author{Jonathan H. Choi\thanks{James Carr Professor of Law, Washington University (St. Louis) School of Law. This project is preregistered with the Open Science Framework at \url{https://osf.io/25gya/}. Replication code and data for this Article are available at \url{https://github.com/jonathanhchoi/llm-interpretation-replication}. Acknowledgements: ETH Zurich Law and Economics Workshop and Lecture Series, Georgetown Symposium on Legal Interpretation and Data, Hong Kong University Law and Technology Workshop, University of Southern California Gould School of Law Faculty Workshop, Conference on Data Science and Law, Conference on Empirical Legal Studies, David Abrams, Elliott Ash, Benjamin Chen, Kevin Cope, Joshua Fischman, Talia Gillis, Amit Haim, Dan Klerman, Holger Spamann, Kevin Tobia, Angela Zhang.}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\begin{abstract}
+I conduct the first large-scale empirical experiments to test the reliability of large language models (LLMs) as legal interpreters. Combining novel computational methods with the results of a new survey, I find that LLM judgments are highly sensitive to prompt phrasing, output processing methods, and choice of model. I also find that frontier LLMs do not accurately assess linguistic ordinary meaning, and I provide original evidence that this is in part due to post-training procedures. These findings undermine LLMs' credibility as legal interpreters and cast doubt on claims that LLMs elucidate ordinary meaning.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+A growing body of scholarly work and judicial practice resolves legal questions simply by asking ChatGPT. Judges in Brazil, Colombia, India, and Mexico have used ChatGPT to justify rulings, and U.S. judges on the D.C. and Eleventh Circuits have demonstrated in three opinions how ChatGPT can resolve real-world cases. These examples have sparked widespread interest in the potential of large language models (LLMs) to interpret the law.
+
+One reason ChatGPT appears credible to judges is that although it slightly varies its response when repeatedly given the same input, the logic of its responses will often ``coalesce, substantively, around a common core'' \citep{deleon2024}. Supporters of LLM-powered legal interpretation have cited this as evidence that LLMs are accurate and consistent \citep{arbel2024generative, engel2024, deleon2024, snell2024}.
+
+However, repeatedly asking ChatGPT the exact same question overstates both consistency and accuracy. ChatGPT artificially injects random variation into its responses, but this does not imply that ChatGPT would give consistent answers to similar (but not identical) inputs, and it does not support the claim that ChatGPT correctly understands the ordinary meaning of language.
+
+I conduct several tests to measure both how consistent LLMs are in rendering legal decisions as well as how accurately they answer questions about linguistic meaning. The results raise significant concerns about LLM reliability in legal interpretation. 
+
+First, I find that LLM interpretations are highly sensitive to prompt phrasing. When given 2000 variations of five legal questions generated through a novel LLM-powered perturbation analysis, GPT-4.1, GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro produce very different probability distributions over possible answers. For some legal questions, the 95\% confidence interval spans nearly the entire range from 100\% confidence in one answer to 100\% confidence in the opposite answer, indicating that changes in prompt phrasing can completely reverse the model's legal conclusions. The average widths of the 95\% confidence interval for these models are 49.8, 47.0, 72.8, and 78.0, respectively. Results also vary depending on the specific technique used to generate case judgments from LLM outputs and on the model chosen. 
+
+Sensitivity of LLM interpretations to prompts, output processing techniques, and choice of model undermines claims that LLMs provide objective interpretive guidance and suggests they could be easily manipulated by savvy litigants or judges. Moreover, LLM outputs for any given legal question are bimodal, tending to cluster at extremes. This means that LLMs provide confident judgments for any given specific prompt that easily flip when the prompt is slightly rewritten. Repeatedly giving an LLM the exact same prompt will therefore significantly overestimate the consistency of LLM interpretations.
+
+Second, I find substantial disagreement between LLMs and human survey respondents on questions about ordinary linguistic interpretation. I focus on ordinary language because its interpretation is often pivotal in cases involving statutes, regulations, and contracts, and several judges have specifically expressed a belief that LLMs can reliably interpret these documents. I generate 100 questions about ordinary meaning (e.g., ``Is a `screenshot' a `photograph'?") and pose them to 1003 survey respondents, gathering 10,030 individual survey responses. I use the average response from the survey sample as ground truth to test whether LLMs can accurately assess the ordinary meanings of words. I find that GPT-4.1, GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro all give answers that substantially deviate from expected human answers. 
+
+Compared to human responses, GPT-4.1 has a mean absolute error (MAE) of 19.7 percentage points, Claude Opus 4.1 has an MAE of 22.9 percentage points, and Gemini 2.5 Pro has an MAE of 24.1 percentage points. In each case, the models all perform worse than always giving an equanimous 50-50 response on all questions and worse than random guesses drawn from a normal distribution (statistically significantly worse than both benchmarks at the 95\% level for Claude Opus 4.1 and Gemini 2.5 Pro, and worse but not statistically significantly so for GPT-4.1). This suggests that LLMs cannot accurately assess the ordinary meanings of words.
+
+Why do LLMs poorly understand ordinary meaning? I investigate one possibility: that post-training procedures used to train modern LLMs cause them to reflect something other than empirical language use in real-world corpora. By testing pairs of models immediately before and after they go through post-training, I can isolate the effects of post-training on the models' judgments. I find that post-training generally makes models worse at judging ordinary meaning. Post-training increases MAE by 13.5 percentage points ($p = 0.001$) and 12.2 percentage points ($p = 0.074$) for two of the models tested, and reduces it by 3.0 percentage points ($p = 0.317$) for the third.
+
+Collectively, these findings suggest that current LLMs fall short of the accuracy, consistency, and transparency needed for legal interpretation. Their sensitivity to prompt phrasing, disagreement across models, and deviations from ordinary meaning all undermine claims that they provide objectively correct answers to interpretive questions. 
+
+This Article contributes to several existing literatures. Most directly, it responds to legal scholars who have endorsed judicial reliance on AI tools in general \citep{volokh2019, woods2022robophobia} and LLMs in particular \citep{arbel2024generative, engel2024, martinez2025traditional}. The Article expands upon work that has criticized the use of LLMs as judges through conceptual arguments or anecdotes, without conducting empirical tests \citep{waldon2025, grimmelmann2025generative, lee2024artificial}.\footnote{
+\citet{blairstanek2025llmsprovideunstableanswers} considered a related but different issue regarding the consistency of LLMs, namely the specific technical issue of whether LLMs designed to produce deterministically identical results actually do so. They found that LLMs accessed through commercial APIs do not provide consistent answers even when temperature is set to 0, speculating that this may be due to indeterminism in floating point operations. Another possibility, which the authors did not address, is that closed-source LLM APIs select some temperature value substantively higher than 0 (like 0.001) in order to avoid division-by-zero errors, which introduces meaningful variation in outputs. \citet{blairstanek2025llmsprovideunstableanswers} therefore addressed one relatively narrow reason why LLM judgments might be inconsistent, which could be solved with a specific technical fix (greater floating-point precision or greedy sampling); the problems addressed in this paper are more fundamental and pervasive.} It also complements critiques of LLM judging focusing on philosophical issues including legitimacy, accountability, and empathy \citep{fine2025public, Afrouzi2023, Michaels2020, Posner2025, re2019}. Finally, it builds on a large computer science literature that finds LLMs to be poorly calibrated or otherwise unreliable at non-legal tasks \citep{hager2024clinicalLLM, lin2025llmwhisperer, yang2024verbalizedconfidencescoresllms, zhu2023, zhou2024nature}.
+
+Why do the findings in this Article disagree with past work that has endorsed LLMs as judges? First, as Section \ref{sec:improved_methods} discusses, most past work has tested LLM reliability by repeatedly giving LLMs the exact same input \citep{snell2024, arbel2024generative, engel2024}. This Article introduces new methods to better test both accuracy and consistency, applying them to find substantially more serious problems than prior work in support of LLMs as judges. Second, work by supporters of LLMs as judges have tested the performance of LLMs on famous cases and hypotheticals \citep{arbel2024generative, engel2024, martinez2025traditional}. Because consensus answers (including the actual judgments rendered in cases) are included in LLMs' training sets, these test examples are contaminated and might lead to inflated impressions of LLM accuracy and consistency \citep{golchin2024time}.
+
+The Article proceeds as follows. Section \ref{sec:background} discusses background and existing literature. Section \ref{sec:prompt_sensitivity} identifies problems with the status quo practice of repeatedly asking an LLM the same question to gauge its reliability and proposes several new methods. Employing these methods, I find that LLM judgments are generally highly sensitive to variations in prompt phrasing, output processing method, and choice of model. Section \ref{sec:ordinary_meaning} presents the results of an original survey demonstrating that LLMs cannot accurately reflect the ordinary meanings of words. The Section finds that one reason for this is post-training, which generally worsens alignment with human judgments. Finally, Section \ref{sec:implications_extensions_alternatives} discusses concrete implications for judges looking to deploy AI tools and proposes alternative techniques to more reliably incorporate LLMs into judicial decisionmaking.
+
+\section{Background}
+\label{sec:background}
+
+To clarify our scope before proceeding---this Article focuses on judges who directly ask an off-the-shelf LLM to help resolve some legal question. This could be an explicitly legal judgment, or a question about the ordinary meaning of language that is important to a case. In addition, the nature of the LLM's assistance could vary; judges might ask an LLM for its opinion and then use that opinion to inform their rulings; in extreme cases, judges might ask LLMs to draft entire opinions and then merely review them before publishing them as binding law. 
+
+On the other hand, there are certain uses of LLMs that I do not primarily discuss in this Article. These include more mundane applications of LLMs, including administrative work or even legal research. In addition, because I only study off-the-shelf LLMs that have not been specifically adapted to legal uses (except implicitly as part of their overall training), I also do not test fine-tuned LLMs or LLMs embedded in larger algorithms---these are discussed further in Section \ref{sec:alternatives}.
+
+For one example of LLM-aided legal interpretation that I \textit{do} focus on, Colombian appellate-court judge Juan Manuel Padilla García, in deciding whether a health insurance provider should cover treatment expenses for an autistic child, asked ChatGPT ``¿Menor autista está exonerado de pagar cuotas moderadoras en sus terapias?'' (``Is an autistic minor exempt from paying co-payments for therapy?'') \citep{espitia2023}. He quoted ChatGPT's response in his decision as support for his verdict. In India, one High Court judge asked ChatGPT ``What is the jurisprudence on bail when the assailant assaulted with cruelty?,'' and cited ChatGPT's response as support for his decision to deny bail \citep{jaswinder2023}. More systematically, administrative and tax judges in one city in Brazil have begun to use ChatGPT to generate rulings in real cases, which are reviewed by humans before being finalized \citep{cerda2024prometea}. Thus in several different countries, judges have used ChatGPT to apply legal doctrines to specific facts.
+
+In other cases, judges have used LLMs to analyze the meaning of ordinary language whose interpretation carries legal significance. For example, Chief Justice Rodríguez Mondragón, of Mexico's highest electoral court, criticized a lower electoral court for \textit{not} employing ChatGPT to analyze the phrase ``ya sabes quién'' (``you know who''), allegedly used as a dog whistle in an election advertisement to signal the president's support for his preferred candidate. Justice Mondragón demonstrated that ChatGPT identified ``ya sabes quién'' as referring to President Andrés Manuel López Obrador and suggested that the lower court should have used ChatGPT, since it sifts through ``databases and all the knowledge that is available to the courts'' \citep{gutierrez2023judges}. 
+
+In the United States, two appellate-court judges have explored the use of ChatGPT in judicial interpretation. Eleventh-Circuit Judge Kevin Newsom used ChatGPT in a concurring opinion to evaluate whether an in-ground trampoline was ``landscaping'' contractually excluded from insurance coverage by asking ChatGPT ``Is installing an in-ground trampoline `landscaping?''' \citep{snell2024}. He found the response ``sensible'' and closer to his intuitions than other conventional interpretive tools, like dictionaries. Judge Newsom reiterated his belief in the usefulness of ChatGPT for legal interpretation in a subsequent concurring opinion \citep{deleon2024}. As another example, in \textit{Ross v. United States} (2025), the D.C. Circuit considered whether a defendant who left a dog in a car on a hot day had the requisite mental state for criminal animal cruelty. In dissent, Judge Joshua Deahl cited ChatGPT's conclusion that leaving the dog in the car would be ``very harmful" as evidence that the harm was ``common knowledge" and that the defendant therefore had the requisite \textit{mens rea} \citep{deahl2025}.
+
+In addition to these known cases, judges have likely employed LLMs in writing opinions without publicly disclosing that they have done so. In the United States in the summer of 2025 alone, a Georgia trial court judge and a federal district court judge in New Jersey withdrew opinions that included fictitious case citations. The cases are widely believed to have been hallucinated by LLMs used to draft the opinions \citep{shahid2025, henry2025judge}. 
+
+LLMs appeal to judges for a variety of reasons. They are simple to use and explain their reasoning in a seemingly transparent manner \citep{arbel2024generative}. They also provide a veneer of scientism that may prevent cherry-picking and add rigor to judicial interpretation \citep{arbel2024generative}. And, because they are pre-trained on real-world text, proponents argue that they provide direct empirical evidence about the ordinary meaning of language \citep{snell2024,arbel2024generative}. In the United States, this makes them especially useful to contemporary textualist judges, who aim to resolve cases about the Constitution, statutes, regulations, and contracts primarily based on the ordinary meanings of the words in these documents \citep{scalia1997matter}. Textualist judges (including two thirds of the Justices on the Supreme Court) have traditionally interpreted ordinary language using dictionaries; but because LLMs can process context, they can deliver more helpful and specific answers to a broader range of interpretive questions than dictionaries could \citep{snell2024}. 
+
+\subsection{A Brief Primer on LLMs}
+\label{sec:brief_primer}
+
+Broadly speaking, LLMs are trained in two major steps, ``pre-training'' and ``post-training.'' Today, the best-performing LLMs are pre-trained to predict the next word in a sequence based on all of the preceding words \citep{vaswani2017attention}.\footnote{Formally, given a sequence of tokens $x_1, x_2, \ldots, x_{t-1}$, the model computes the conditional probability distribution $P(x_t | x_1, x_2, \ldots, x_{t-1})$ for the next token $x_t$. This is achieved by parameterizing the distribution using a neural network with parameters $\theta$: $P(x_t | x_1, x_2, \ldots, x_{t-1}; \theta) = \frac{\exp(f_\theta(x_t | x_1, x_2, \ldots, x_{t-1}))}{\sum_{x' \in V} \exp(f_\theta(x' | x_1, x_2, \ldots, x_{t-1}))}$, where $V$ is the vocabulary of possible tokens and $f_\theta$ is the scoring function computed by the neural network. During training, the model parameters $\theta$ are optimized to maximize the likelihood of the observed next tokens in the training corpus.} In pre-training, models learn to predict the next word over a vast corpus of documents. The main goal in this step is to train on as large a corpus as possible, trillions of words at a minimum. Training corpora include books, magazines, television transcripts, and reference sources like Wikipedia, but the bulk of the training dataset is typically content scraped from the Internet \citep{brown2020language}.
+
+After pre-training, an LLM can accurately predict the likely next word in a document based on statistical predictions with reference to its training corpus. However, predicting the most likely word to appear next on the internet will often lead to offensive, biased, or inaccurate language. To address this problem, researchers post-train LLMs using various techniques, like ``supervised fine-tuning'' (SFT), ``preference fine-tuning'' (PFT), and ``reinforcement learning from human feedback'' (RLHF) which explicitly tune the LLM to satisfy human preferences.\footnote{In SFT, models are fine-tuned on training examples that include desired outputs, generally written by human annotators. PFT builds on this by fine-tuning based on human preferences between pairs of model outputs, but typically using a simpler optimization process than full RLHF. In RLHF, human evaluators rate model outputs on dimensions such as truthfulness, helpfulness, and harmlessness; these ratings train a reward model that is then used to further optimize the LLM through reinforcement learning.} These techniques render LLMs less biased and more practically useful, but they also cause LLM outputs to deviate from simple empirical predictions of language use in practice.
+
+\section{LLM Judgments Are Sensitive to Prompts}
+\label{sec:prompt_sensitivity}
+
+\subsection{The Status Quo}
+\label{sec:status-quo}
+
+The supporters and critics of AI legal interpretation mentioned above have generally conducted some version of the following experiment: repeatedly asking an LLM the same legal question in order to ``generate an entire distribution and observe the variance'' in the LLM's responses \citep{engel2024}. Judge Newsom tried this experiment, finding only ``minor variations in structure and phrasing'' and concluding that ``the responses did coalesce, substantively, around a common core'' \citep{deleon2024}. \citet{lee2024artificial}, on the other hand, found substantial variation upon repeated queries, concluding that ChatGPT's ``lack of internal consistency raises serious questions about replicability.'' These experiments assume that asking an LLM the same question over and over reveals something about the LLM's deep structure and ultimate reliability.
+
+This assumption is misguided. Variation in LLM outputs is \textit{entirely artificial}, and treating it as the basis for statistical confidence measures is a mistake. As mentioned above, most modern LLMs produce probability estimates for each possible next word, given the prior words---for example, given the sentence ``The cat in the \ldots,'' an LLM might predict the next word has a 50\% probability of being ``hat,'' a 20\% probability of being ``street,'' and so on. But these probabilities are merely point estimates---they are not accompanied by confidence metrics like standard errors. The probabilities reflect \textit{aleatory uncertainty} (uncertainty generated by a random sampling process) rather than \textit{epistemic uncertainty} (uncertainty about the true underlying distribution).
+
+In order to convert these point estimates into a distribution of responses (that is, in order to determine how much of the time to actually output ``hat'' versus ``street''), the LLM projects its point estimates onto an artificial probability distribution \citep{vaswani2017attention}.\footnote{Formally, the temperature parameter $\tau$ modifies the probability distribution over the vocabulary by rescaling the logits (unnormalized log probabilities) before applying the softmax function:
+\begin{equation}
+P_\tau(w_i|w_{<i}) = \frac{\exp(z_i/\tau)}{\sum_{j=1}^{|V|} \exp(z_j/\tau)}
+\end{equation}
+where $z_i$ is the logit for token $w_i$, $w_{<i}$ represents all previous tokens, and $|V|$ is the vocabulary size.} Crucially, the spread of the distribution is arbitrary, determined solely by the model's temperature hyperparameter. As temperature approaches zero, the LLM will always give the highest-probability output \citep{holtzman2020curious}. Turn the temperature up, and the model will output low-probability next tokens more frequently, becoming less predictable and more varied.\footnote{Formally, as $\tau$ approaches 0, the distribution becomes increasingly peaked, with the highest-probability token dominating:
+\begin{equation}
+\lim_{\tau \to 0} P_\tau(w_i|w_{<i}) = 
+\left\{
+\begin{array}{ll}
+1, & \text{ if } z_i = \max_j z_j \\[2.5ex]
+0, & \text{ otherwise }
+\end{array}
+\right\}
+\end{equation}
+
+Conversely, as $\tau$ increases, the distribution becomes more uniform:
+\begin{equation}
+\lim_{\tau \to \infty} P_\tau(w_i|w_{<i}) = \frac{1}{|V|}
+\end{equation}}
+
+It follows that what prior commentators have interpreted as a symptom of the LLM's reliability is an aleatory projection based on the temperature each commentator has selected (or the default temperature each has implicitly accepted). An LLM with temperature set to zero will arrive at the same judgment every time, but this does not imply that those judgments are consistent in a deeper sense. 
+
+Thus, contra \citet{lee2024artificial}, it is not a problem that an LLM will typically not answer with absolute certainty. The fact that the LLM does not assign 100\% probability to its guess of the next word could be a sign of appropriate humility; it is unrealistic to expect that next words could be predicted with 100\% accuracy. On the other hand, just because an LLM \textit{does} assign a high probability to its guess is no reason to give that guess high credence, and past literature suggests that LLM probabilities may reflect ``overconfident'' guesses \citep{Pawitan2025Confidence}. In Section \ref{sec:prompt_sensitivity}, I find that LLM log probabilities tend toward extreme values that can flip when prompts are perturbed, underscoring the problem with taking probability distributions from a single LLM prompt at face value.
+
+Imagine that a weather forecasting model predicted that tomorrow's temperature would be ``72°F with 60\% confidence." If you ran a random number generator to simulate outcomes based on that single forecast---sometimes getting 72°F, sometimes 71°F or 73°F according to the stated probabilities---the variance in your simulated outcomes would tell you nothing about whether the model itself is reliable. You would be merely sampling from one model's fixed prediction, not measuring the model's track record. We need some other, better method to test the accuracy and consistency of model predictions. 
+
+\subsection{Improved Methods to Quantify LLM Consistency}
+\label{sec:improved_methods}
+
+I propose two complementary methods for quantifying LLM judgments that improve upon existing approaches. As discussed above, a single LLM's outputs with respect to a single prompt should be treated as a point estimate rather than a distribution---the distribution comes from generating probabilistic point estimates over some sample (here, of perturbed prompts or different LLMs).
+
+The first method, which I call the ``relative probability'' method, phrases the prompt as a binary question (e.g., a yes/no question) and calculates the probability of the answer's being the first option. Where $\log p_1$ and $\log p_2$ are the log probabilities of the complete response strings for the first and second answer options respectively,\footnote{In practice, analyzing the log probability of the first token is equivalent to analyzing the complete string, so long as the starting token is unique and the LLM complies with the output format. For example, Section \ref{sec:prompt_sensitivity} discusses an LLM prompt that requires either the output ``Monthly installment payments" or ``Payment upon completion." Due to GPT-4.1's strong ability to follow instructions, conditional on ``Monthly" being the first token, the linearized probability of any token other than ``installment" being the second token is $\approx 0\%$; and the same for ``upon," conditional on ``Payment" being the first token. Indeed, over 10,000 examples, none of GPT-4.1's outputs were noncompliant for the relative probability method in the sense that, conditional on the first token, the linearized probability of an unexpected subsequent token was $< 0.001\%$ in all cases.} I convert these to linear probabilities with exponentiation and then calculate the relative probability $p_{r}$ of the first answer option compared to the second by dividing the linearized probability of the first answer option by the sum of the linearized probabilities of both answer options:
+
+$$p_{r} = \frac{p_1}{p_1 + p_2}$$
+
+This normalized measure ranges from 0 to 1, with values above 0.5 indicating the model favors the first answer option, and values below 0.5 indicating it favors the second option.
+
+The second method, which I call the ``verbalized confidence'' method, directly asks the model to verbalize its confidence in one of the answer options on a scale from 0 to 100. The LLM then provides log probabilities for tokens corresponding to integers from 0 to 100, and an aggregate confidence score is calculated as a weighted average of the LLM's responses. More formally, let $\mathcal{V} = \{0, 1, 2, \ldots, 100\}$ be the set of possible confidence values that the model can output. For a given prompt $p$, the model assigns a probability $P(v|p)$ to each value $v \in \mathcal{V}$. The weighted confidence score $c(p)$ is then defined as the expected value of the confidence:
+
+\begin{equation}
+c(p) = \mathbb{E}[v|p] = \sum_{v \in \mathcal{V}} v \cdot P(v|p)
+\end{equation}
+
+In practice, we approximate this expectation by considering only the top-$k$ most probable values\footnote{I use $k$ = 20, which is the maximum permissible with OpenAI's API---because log probabilities drop off sharply after the first few, this is in practice a very good approximation of the full distribution of log probabilities.}:
+
+\begin{equation}
+c(p) \approx \sum_{i=1}^{k} r_i \cdot p_i
+\end{equation}
+
+where $r_i$ is the $i$-th most probable verbalized confidence value and $p_i$ is its corresponding probability.
+
+Both methods examine the same underlying quantities as \citet{lee2024artificial}, \citet{arbel2024generative}, and \citet{deleon2024}, who also framed questions as yes/no answers to LLMs and asked LLMs for numerical confidence scores. However, I build on prior methods by directly analyzing log probabilities.
+
+My approach improves upon prior work in several respects. First, by directly analyzing log probabilities, I eliminate sampling randomness entirely, allowing me to observe the model's genuine probability estimates rather than artificially randomized outputs. This also allows me to precisely quantify the model's verbalized confidence in each possible interpretation. Second, by testing LLMs algorithmically and en masse, I can run many more test examples than would be possible by using ChatGPT---for example, I process 2000 perturbations of prompts rather than 20, as tested by \citet{arbel2024generative}. This allows more comprehensive assessment of prompt sensitivity. This larger sample size enables more robust statistical analysis and reveals patterns that might be missed with smaller samples.
+
+Most importantly, my methodology distinguishes between aleatory uncertainty (introduced by increasing model temperature) and epistemic uncertainty. This distinction is crucial for evaluating whether LLMs interpret legal texts consistently, as it separates the model's inherent limitations from artifacts introduced by particular sampling strategies. By eliminating an additional source of potential randomness, my methods will also tend to be more conservative in diagnosing inconsistency than those used by \citet{arbel2024generative}.
+
+Having established \textit{how} to measure consistency, the next question is \textit{what} to measure---what do we mean by consistency? The conventional method in the computer science literature to estimate model stability is bootstrapping: by re-training a new LLM repeatedly on randomly reconstructed training corpora, we can see how much LLM outputs vary due to randomness in the selection of training materials \citep{antoniak2019, choi2025llms}. However, LLMs are expensive to retrain, making it infeasible to conduct full-scale bootstrapping on large models, like GPT models. Moreover, bootstrapping only gets at one sort of variation: variation due to randomness in the construction of the training corpus. 
+
+The real question when testing the consistency of LLMs as legal interpreters is: what is the range of outputs that an LLM would generate given a realistic range of inputs? Ideally, a judge using an LLM in a principled and consistent manner should obtain principled and consistent results. Thus the key methodological task is to identify realistic sources of variation that might affect LLM outputs in practice.
+
+LLM judgments about legal cases might plausibly be sensitive to several important sources of variation. One is the prompt used to query the LLM. Another is the corpus used for training, including decisions to upweight or downweight particular types of text \citep{albalak2024surveydataselectionlanguage} as well as the order in which training data are processed \citep{dodge2020fine}. And a final source of variation is the process of LLM training, which involves a variety of technical decisions about model architecture, training techniques, and hyperparameters. 
+
+In the remainder of this Section, I propose and conduct technical tests on inconsistency caused by changes in prompt phrasing, that is in how a case is framed to an LLM. Variation in outputs between different models also suggests that changes in corpus selection and model training techniques can lead to inconsistent LLM outputs on legal questions.
+
+\subsection{Methodology}
+
+If realistic variation in how a judge asks questions of LLMs---for example, differences in how the facts are presented or in the phrasing of the key legal question in a case---can lead to different legal judgments, LLMs are not only unreliable but potentially \textit{manipulable} by litigants and by judges seeking to reach a particular conclusion. Sensitivity of LLMs to prompts (which non-legal research suggests is likely \citep{zhou2023navigating, lin2025llmwhisperer}) would undermine the arguments made by their proponents that they provide an objective outside opinion on interpretive questions.
+
+To empirically test this sensitivity, I develop a novel two-stage perturbation analysis. I begin with five scenarios presented by \citet{arbel2024generative}, based on real-world cases.\footnote{Given that these cases generally predated the training cutoffs for GPT and Claude, the models might exhibit unrealistic consistency in their judgments because they already ``know'' the correct answer, namely the actual outcome of the case. We might therefore regard the results here as a conservative lower bound on the sensitivity of LLMs to prompts.} I use these scenarios to make my results directly comparable with \citet{arbel2024generative}'s and to provide reassurance that I did not cherry-pick prompts to make LLMs appear less reliable. Each scenario involves a different legal question. The full text of each scenario is located in Appendix \ref{appx:scenario_text}.
+
+For each scenario, I use Claude Opus 4.1 to generate 2000 variations (in 100 batches of 20) that reflect a realistic range of framings that a judge could use when formulating a legal question from the prompt.\footnote{The operative language I use to prompt Claude was: ``Please rephrase this question in 20 variations that differ from the original question but preserve the substance of the question. Each rephrasing should be a complete question, not just a fragment of a question.'' I set Claude's temperature to 0.9.} These variations are designed to test how differences in prompting within a realistic range of expected model use can change the model's assessment of the correct legal interpretation. The level of detail provided in the rephrasings approximately matches the level provided to LLMs in the real-world cases and existing scholarly literature discussed in Section \ref{sec:background}. 
+
+I validated the similarity of the perturbed prompts by randomly reviewing perturbations; I reviewed 100 and found no errors where the model hallucinated facts that were not present in the original set of facts, and I verified that in each case the perturbation generated was a plausible reframing of the original set of facts as a judge might write a prompt for an LLM. Readers can repeat this exercise by reviewing the perturbations in Online Appendix Section 1, which provides perturbed prompts randomly selected to provide a stratified sample of prompts spanning GPT-4.1's full range of outputs. Despite being selected to include prompts at extreme values (like the example below), the Online Appendix demonstrates that the range of perturbed prompts reflects realistic variation in wording that one would expect in translating case facts into a prompt.
+
+Each rephrased prompt is then submitted to GPT-4.1 with temperature set to zero to eliminate sampling randomness.\footnote{Strictly speaking, temperature cannot be exactly zero as this would create a mathematical division by zero in the softmax function. When researchers refer to ``temperature = 0,'' they are using shorthand for greedy sampling, where the model deterministically selects the highest probability token at each step \citep{holtzman2020curious}.} 
+
+I make two conservative methodological choices that should generally decrease the amount of variation generated by the models. First, I use the same scenario language previously used by Arbel and Hoffman, which already considerably simplifies the language of the original cases. If given the full content of briefs and arguments in the underlying cases, there are many more legal issues that a judge could focus on, which would tend to increase the amount of variation between judges (or LLM legal interpreters). Second, I generate 2000 variations to reduce the likelihood that core results in this paper are driven by random chance and to prevent 95\% confidence intervals from being too wide merely because the sample size is too small.\footnote{Claude generates these variations by attempting to produce 20 variations of each prompt 100 different times, with no awareness of prior attempts. Given the simplicity of the underlying case descriptions, if there were only a narrow range of plausible reframings of each scenario, Claude would tend to output the same prompts repeatedly despite the apparently large $N$. This duplication should not affect the final results, since the variations are generated in batches without attempting to avoid repetition. The decision not to avoid repetition was a conservative methodological choice that will tend to make GPT-4.1's outputs appear more stable.}
+
+The following two examples, both rephrasings of the same prompt, illustrate how minor variations in prompt phrasing can lead to very different outcomes\footnote{The probabilities are generated using the relative-probability method described in the following Subsection; using the verbalized-confidence method produces similar results.}:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.80\textwidth}p{0.17\textwidth}}
+\hline
+\\[-0.95ex]
+\textbf{Prompt} & \textbf{Relative Probability} \\
+\\[-0.95ex]
+\hline
+\\[-0.95ex]
+How broadly should ``other affiliate[s]" be interpreted in a 1961 contract clause requiring [Company] and such affiliates to split royalties equally after third-party deductions in foreign markets—does this encompass only affiliates existing at contract formation or does it include affiliates established subsequently? & 14.8\% \\
+\\[-0.95ex]
+\hline
+\\[-0.95ex]
+How broadly should ``other affiliate[s]" be interpreted in a 1961 contractual provision requiring [Company] and its affiliates to split royalties 50/50 after deducting foreign market third-party fees—does this extend beyond affiliates existing at contract signing to include future affiliates? & 73.1\% \\
+\\[-0.95ex]
+\hline
+\end{tabular}
+\caption{Examples of prompt sensitivity in contract term interpretation, with outputs generated using the relative-probability method. The probability is the probability that the answer is ``Existing Affiliates."}
+    \label{tab:prompt_sensitivity_examples}
+\end{table}
+\FloatBarrier
+
+Despite reflecting the same underlying issue and facts, with only natural differences in phrasing that one would expect as a judge translates a real-world case into a prompt for an LLM, the model's assessment flips from being confident that the term does not include existing affiliates (14.8\% likelihood) in the first example to confident that it \textit{does} include existing affiliates (73.1\% likelihood) in the second example. This reversal based on subtle differences in phrasing highlights the sensitivity of LLM judgments to prompt variations.
+
+
+\subsection{Results: Relative Probabilities}
+\label{sec:relative_prob}
+
+In the results that follow, I focus on two key issues. First, how \textit{widely dispersed} are the results? This reflects how much inherent variation judges should expect when relying on LLM interpreters. I focus on the 95\% confidence interval in particular. Second, how \textit{normal} is the distribution of results? If LLM interpreters are well-calibrated in their assessments, points should be normally distributed around the mean. If, on the other hand, the distributions tend to exhibit bimodality at extremes (as Appendix \ref{appx:perturbation_normality} shows that many do), this would be evidence that LLMs are overconfident in their predictions.
+
+The results of the relative-probability analysis are shown in Table \ref{tab:prompt_rel_prob_stats} and Figure \ref{fig:combined_prompts}, for each of the five prompts.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccccc}
+        \hline
+        \textbf{Prompt} & \textbf{Mean Relative} & \textbf{Std Dev} & \textbf{2.5th} & \textbf{97.5th} & \textbf{95\% CI} \\
+        \textbf{Number} & \textbf{Probability} & & \textbf{Percentile} & \textbf{Percentile} & \textbf{Width} \\
+        \hline
+        1 & 0.007 & 0.067 & 0.000 & 0.007 & 0.007 \\
+        2 & 0.943 & 0.212 & 0.003 & 1.000 & 0.997 \\
+        3 & 0.400 & 0.435 & 0.000 & 1.000 & 1.000 \\
+        4 & 0.987 & 0.086 & 0.881 & 1.000 & 0.119 \\
+        5 & 0.389 & 0.455 & 0.000 & 1.000 & 1.000 \\
+        \hline
+    \end{tabular}
+    \caption{Summary statistics for prompt perturbations with respect to relative probabilities. This table analyzes how GPT-4.1's legal judgments vary when presented with 2000 rephrasings of five legal interpretation scenarios. Each scenario tests a different legal question (insurance policy exclusions, prenuptial agreements, contract terms, construction payment terms, and insurance burglary coverage). Relative probability is calculated from log probabilities of competing answers. The 95\% confidence interval width indicates the range of variation in model judgments across different phrasings of the same underlying legal question.}
+    \label{tab:prompt_rel_prob_stats}
+\end{table}
+\FloatBarrier
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{combined_prompts_visualization.png}
+    \caption{Distribution of relative probabilities across all prompts. This figure displays GPT-4.1's probability estimates for 2000 rephrasings of five legal interpretation scenarios. Each colored point represents the model's relative probability assessment for one rephrasing of the original legal question. The spread of points on the $x$-axis within each question is jitter added for visibility. Prompts 1-5 correspond to: (1) insurance policy water damage exclusion, (2) prenuptial agreement filing date interpretation, (3) contract term affiliates interpretation, (4) construction payment terms, and (5) insurance policy burglary coverage. Black dots indicate mean probabilities across all rephrasings, with error bars showing 95\% confidence intervals. Values above 0.5 indicate the model favors the first answer option; values below 0.5 favor the second option.}
+    \label{fig:combined_prompts}
+\end{figure}
+\FloatBarrier
+
+The table and figure show large variation in results depending on the prompt used. If prompt phrasing did not substantially affect the model's judgments, the points would be tightly clustered around their respective means, with relatively tight 95\% confidence intervals. Instead, the 95\% confidence intervals are extremely wide. Prompts 2, 3, and 5 have 95\% confidence interval widths of 0.997, 1.000, and 1.000 respectively, spanning essentially the entire probability range from 0 to 1. These data suggest that judges might receive confident, completely opposite LLM recommendations due to unintentional variation in prompt phrasing---problematic if LLM outputs are to be used to decide real cases. 
+
+In addition to exhibiting wide variation, the distribution of results is distinctly non-normal. The distribution of relative probabilities for each prompt is statistically different from the normal distribution when applying either a Kolmogorov-Smirnov (KS) test or an Anderson-Darling (AD) test. This is true whether or not we take into account truncation at 0 and 1 in constructing the theoretical normal distribution. Applying either a KS test or an AD test, $p < 0.001$ for all prompts and whether accounting for truncation or not. Because AD and KS tests are notoriously sensitive to departures from the theoretical distribution, especially as $N$ increases, I also confirm non-normality qualitatively using quantile-quantile (QQ) plots. Appendix \ref{appx:perturbation_normality} provides additional details about the KS and AD tests, as well as the QQ plots. Qualitatively, the QQ plots suggest a tendency toward bimodality (concentration of estimates at extremes), both for the normal and truncated-normal distributions. 
+
+Bimodality suggests that the LLMs are overconfident in their judgments, consistent with \citet{zhu2023} and \citet{zhou2024nature}. Because I generate relative probabilities by averaging the log probabilities generated by the GPT-4.1, a bimodal distribution of relative probabilities implies that LLMs will tend to provide the same legal judgment when repeatedly given the same prompt, but that perturbing the prompt will often cause an LLM to consistently give an \textit{opposite} response. This underscores the problem discussed in Section \ref{sec:status-quo}, that repeatedly prompting an LLM with the same prompt understates variability in model outputs.
+
+
+
+\subsection{Results: Verbalized Confidence}
+
+The results of the verbalized-confidence analysis are shown in Table \ref{tab:prompt_confidence_stats} and Figure \ref{fig:combined_confidence}, for each of the five prompts.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccccc}
+        \hline
+        \textbf{Prompt} & \textbf{Mean Weighted} & \textbf{Std Dev} & \textbf{2.5th} & \textbf{97.5th} & \textbf{95\% CI} \\
+        \textbf{Number} & \textbf{Confidence} & & \textbf{Percentile} & \textbf{Percentile} & \textbf{Width} \\
+        \hline
+        1 & 16.58 & 10.38 & 3.41 & 39.12 & 35.72 \\
+        2 & 31.74 & 10.98 & 18.16 & 68.25 & 50.09 \\
+        3 & 30.87 & 6.33 & 18.45 & 40.10 & 21.65 \\
+        4 & 52.73 & 17.46 & 31.28 & 84.13 & 52.85 \\
+        5 & 51.42 & 23.92 & 6.10 & 94.77 & 88.67 \\
+        \hline
+    \end{tabular}
+    \caption{Summary statistics for prompt perturbations with respect to verbalized confidence scores. This table presents an alternative method for extracting legal judgments from GPT-4.1 by directly querying the model's confidence on a 0-100 scale. The same 2000 rephrasings of five legal scenarios are tested, but instead of calculating relative probabilities from log outputs, the model was asked to report its confidence level. Weighted confidence represents the expected value calculated from the probability distribution over possible numeric responses (0-100). The 95\% confidence interval width measures variation in the model's confidence assessments across different phrasings of the same legal question.}
+    \label{tab:prompt_confidence_stats}
+\end{table}
+\FloatBarrier
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{combined_confidence_visualization.png}
+    \caption{Distribution of weighted verbalized confidence scores across all prompts. This figure shows GPT-4.1's self-reported confidence levels when directly asked to rate its certainty about legal interpretations on a 0-100 scale. Each colored point represents the model's weighted confidence score for one of 2000 rephrasings per legal scenario. The spread of points on the $x$-axis within each question is jitter added for visibility. Prompts 1-5 correspond to the same legal questions as in previous figures. Black dots show mean confidence levels with 95\% confidence intervals.}
+    \label{fig:combined_confidence}
+\end{figure}
+\FloatBarrier
+
+Here, too, narrow 95\% confidence intervals would indicate high model consistency and stability against prompt variations. But that is not what we see; again, the distribution of probabilities across different phrasings is dispersed, with substantial variation in the model's predictions. As with the prior metric, the variation in responses cannot be explained by sampling randomness and instead reflects fundamental instability in how LLMs process and reason about legal questions.
+
+As with relative probabilities, the distributions of confidence scores are also non-normal, again rejecting the KS test and AD test nulls that the distributions are normal ($p < 0.001$ for both tests, over all prompts, whether accounting for truncation or not). Qualitatively, the distributions tend to suggest right skew (more extreme predictions on the high end)---this again suggests the potential for overconfidence when extracting a single value from an LLM. Appendix \ref{appx:perturbation_normality} provides additional details about normality analysis.
+
+Although prior literature has assumed (and intuition might suggest) that the relative-probability method and the verbalized-confidence method are equivalent, it is not clear why this would be so. LLMs are trained to produce well-calibrated token probabilities based on empirical word distributions (at least during pre-training); they are \textit{not} trained to produce accurate numerical confidence estimates, and indeed LLMs natively treat numbers merely as words, with no inherent relationship between 1111 and 1112 except as learned from their training corpora. This paper is therefore also the first to test the equivalence of these two methods. 
+
+Importantly, the results suggest they are \textit{not} equivalent. Using relative probabilities, the mean model judgment for prompt 2 is very high (0.943); using verbalized confidence scores, it is much lower (31.74). Similarly, using relative probabilities, the mean model judgment for prompt 4 is very high at 0.987; using verbalized confidence scores, it is more moderate at around 52.7. This suggests that the model's assessments not only vary due to prompt phrasing but also vary depending on the specific metric used.
+
+\subsection{Robustness Checks}
+
+A skeptical reader might reasonably question whether the findings in Section \ref{sec:prompt_sensitivity} merely reflect idiosyncrasies of GPT-4.1. GPT-4.1 is the leading model for which log probabilities are readily available, but it is crucially not one of OpenAI's latest ``thinking" models. Moreover, it reflects the work of a single lab. Perhaps OpenAI's models might be idiosyncratically worse at legal interpretation than those of its competitors.
+
+To address these concerns, I repeat the above analysis using three state-of-the-art thinking models: GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro. As detailed in Appendix \ref{appx:alternative_models}, these models exhibit similarly large variation in their outputs, with mean 95\% confidence interval widths of 47.0, 72.8, and 78.0 points respectively---comparable to or exceeding GPT-4.1's 49.8-point width. Moreover, the models disagree substantially with each other about which scenarios warrant high confidence and which remain ambiguous, suggesting that the choice of model is a further important source of inconsistency in LLM judgments.
+
+A second concern relates to the perturbations themselves. It is impossible to examine all 10,000 rephrasings in detail and unrealistic to expect most readers to peruse the randomly sampled perturbations in Online Appendix Section 1 to verify their similarity to the original legal scenarios. A skeptical reader might therefore wonder whether the perturbations inadvertently change legally salient facts that actually cause the variation in model outputs. 
+
+To address this concern, I conduct an additional robustness check by inserting true but legally irrelevant statements (such as ``Mount Everest is approximately 8,848 meters tall'') into the legal scenarios. Although it is less realistic that judges would use LLMs in this way, this approach guarantees that no legally relevant facts have been altered in the perturbations. As described in Appendix \ref{appx:irrelevant_perturbations}, this alternative perturbation method produces similarly high variance: confidence interval widths averaging 41.0, 53.0, and 65.5 points for GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro respectively. The fact that objectively irrelevant information can shift model confidence so much---in some cases causing the models to flip their judgments entirely---demonstrates that the instability documented in this paper cannot be attributed to subtle changes in legal meaning.
+
+\subsection{Discussion}
+
+The sensitivity of LLM judgments to variations in prompt phrasing casts serious doubt on the reliability of AI interpretations. The finding that prompts drawn from the same underlying fact pattern can produce different probability distributions—with 95\% confidence intervals spanning nearly the entire probability range in some cases—undermines the claim that LLMs offer objective interpretive guidance. Rather than providing consistent and objective judgments, LLMs could reflect random variation in prompt initialization rather than the merits of the case.
+
+Bimodality and right skew in the distribution of outputs further suggest that LLMs frequently exhibit unwarranted confidence in their judgments, potentially misleading users who rely on these assessments. This finding is consistent with findings in the computer science literature that large, post-trained models become less willing to admit what they do not know and become less calibrated and less reliable \citep{zhou2024nature, zhu2023}. This false certainty could be particularly problematic in legal interpretation, where evaluating ambiguity is a crucial step in the application of doctrines like the plain meaning rule \citep{choi2024measuring}. It also confirms the problem identified in Section \ref{sec:status-quo}, that LLM log probabilities are not well calibrated and that repeatedly asking an LLM the same question does not satisfactorily capture LLM uncertainty about legal judgments.
+
+Finally, recall that results substantially differ depending on whether we use relative probabilities or verbalized confidence and depending on which model we choose. There is no principled reason why these methods or models should give different results, and past work has used them interchangeably \citep{arbel2024generative}. This is another sort of randomness based on the way the interpretive question is framed to the LLM. 
+
+Sensitivity to prompts, methods, and models is bad for methodological robustness; it gets worse when we add motivated interpreters into the mix. Litigants could easily cherry-pick the prompts that produce the results most favorable to their side. At best this could lead to a fruitless battle of the experts, with each side trotting out the most favorable prompts for its case, and at worst it could advantage well-resourced parties with the technological sophistication (or the funds to pay for technological sophistication) to most aggressively manipulate prompts. Moreover, judges could also use LLM evidence (perhaps cherry-picking the already cherry-picked evidence provided by litigants) merely to buttress their preferred outcome rather than using it as an objective constraint on legal decisionmaking.
+
+\section{LLM Judgments Do Not Accurately Reflect Ordinary Meaning}
+\label{sec:ordinary_meaning}
+
+Prompt sensitivity speaks to the precision or stability of LLM judgments; in addition, we might ask about the \textit{accuracy} or \textit{construct validity} of LLMs as tools to interpret the ordinary meaning of language. As Section \ref{sec:background} discusses, judges often use LLMs to understand common knowledge or to assess the ordinary meanings of words that are relevant to litigation. This assumes that LLMs can in fact accurately assess the ordinary meanings of words.
+
+To test this question, I develop a test battery of 100 questions about ordinary linguistic meaning. A list of these questions is in Online Appendix Section 3. Each question is a binary classification task asking whether one concept is a type or instance of another concept. For example:
+
+\begin{itemize}
+    \item Is a ``screenshot'' a ``photograph''?
+    \item Is ``advising'' someone ``instructing'' them?
+    \item Is an ``algorithm'' a ``procedure''?
+\end{itemize}
+
+These questions are specifically designed to probe ambiguous semantic relationships similar to those that arise in legal interpretation. To minimize the risk of data contamination (where models might have seen these exact questions during training), I generate novel questions that to my knowledge have not appeared in actual legal cases.
+
+I test ordinary-meaning questions rather than explicitly legal questions for three reasons. First, questions of ordinary meaning are central to modern textualist interpretation, and textualists are the judges most interested in using LLMs for interpretation, because of the emphasis they place on linguistic interpretation as a core judicial task. Second, using non-legal questions avoids the confounding factor of models potentially having been trained on legal precedents, allowing us to test their genuine interpretive capabilities rather than their ability to recall case law. Third, legal questions are required to test prompt perturbations (since simple linguistic questions cannot be meaningfully perturbed), but they are not required to test inter-model consistency.
+
+\subsection{Survey Methodology}
+
+I recruited 1003 participants\footnote{The target number of participants was 1000, but Prolific ultimately recruited slightly more participants than expected.} through Prolific, an online research platform, selecting a demographically representative sample based on U.S. census data, across age, sex, and ethnicity. Appendix \ref{appx:demographic-info} provides details regarding respondent demographics. Participants were required to be fluent English speakers with at least 95\% approval ratings on previous studies.
+
+To minimize respondent fatigue while maintaining statistical power, I divided these questions into ten forms of ten questions each, with each participant randomly assigned to complete one form. Each form also included one attention check question (``Does 2 + 2 equal 4?'') to identify inattentive respondents. The order of the questions was randomized within each form presented to each participant.
+
+Rather than forcing binary yes/no responses, participants answered each question using a continuous 0-100 slider scale, where 0 indicated ``No, definitely not'' and 100 indicated ``Yes, definitely.'' This design avoids artificial binarization of ambiguous judgments and allows direct comparison with LLM probability estimates.
+
+Following preregistered exclusion criteria, I excluded participants who: (1) gave an answer other than 100 on the attention check question, (2) completed the survey in less than 20\% of the median completion time, suggesting insufficient engagement, or (3) provided identical responses to all substantive questions, indicating lack of attention to question content. These criteria resulted in the exclusion of 129 participants (12.8\%),\footnote{No participants completed the survey in less than 20\% of the median completion time; 9 gave identical responses across substantive questions; 115 failed the attention check; 5 respondents did not complete the survey.} leaving a final sample of 879 respondents, with approximately 89 responses per question.
+
+Appendix \ref{appx:additional_details} provides additional details about the survey, including a screenshot of the survey treatment and demographic details for the sample. Online Appendix Section 6 contains the power analysis used to determine survey sample size. 
+
+\subsection{Results}
+
+To assess how similar LLM judgments are to human judgments, I treat the average human response as ground truth and measure each model's deviations from the human baseline. I use the verbalized-confidence method, as it is the most conceptually similar to the 0 to 100 scale I use in the survey; only GPT-4.1 provides log probabilities, so for Gemini 2.5 Pro and Claude Opus 4.1, I instead query the LLM 100 times to generate a manually weighted average. 
+
+Figure \ref{fig:per_question_errors} plots the LLM errors for each question, measured as the difference between each LLM's verbalized confidence score and the mean human rating (both normalized to a range from 0.0 to 1.0).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{per_question_errors.png}
+    \caption{Distribution of LLM errors on ordinary interpretation questions. This figure shows errors for GPT-4.1, Gemini 2.5 Pro, and Claude Opus 4.1, on 100 ordinary interpretation questions, relative to the mean human response from a survey. Each colored point represents the error rate for one model on one question. The errors fall on a -1.0 to +1.0 scale. The $x$-axis includes jitter for visibility. Black dots show the mean error, bars show 95\% confidence intervals.}
+    \label{fig:per_question_errors}
+\end{figure}
+\FloatBarrier
+
+Figure \ref{fig:per_question_errors} shows that each of the LLMs often provides judgments that are far from the average human judgment on any particular question. To further quantify their performance in the aggregate, I calculate the mean response across all human evaluators, then compute the Mean Absolute Error (MAE) for each model:
+
+\begin{equation}
+\text{MAE} = \frac{1}{n}\sum_{i=1}^{n}\left|y_i - \hat{y}_i\right|
+\end{equation}
+
+where $y_i$ represents the average human response for question $i$ and $\hat{y}_i$ represents the model's response. Lower MAE values indicate better alignment with human judgments. To obtain robust estimates with confidence intervals, I employ a bootstrap procedure with 1000 iterations. In each iteration, I resample individual questions with replacement from the full set of questions, then recalculate the MAE for each model using the resampled question set.
+
+To provide a baseline to compare the LLMs against, I calculate the MAE for two alternative methods: (1) always guessing 0.5 (``equanimity"), and (2) random draws from a normal distribution with the same mean (0.619) and standard deviation (0.167) as the other questions in the human survey (``random").\footnote{That is, for each question, a random baseline was constructed by taking a leave-one-out sample of the \textit{other} questions in the survey, calculating the mean and standard deviation for those questions, and generating a random value from the normal distribution with the mean and standard deviation from the leave-one-out sample.} Figure \ref{fig:survey_mean_distribution} in the Appendix plots the mean responses across all 100 survey questions; the results are widely dispersed and not fully normal, which will tend to decrease the performance of the Equanimity and Random baselines.
+
+Table \ref{tab:mae_results} shows MAE statistics for the baselines as well as each of the models tested.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Model} & \textbf{MAE} & \textbf{95\% CI} \\
+\hline
+Equanimity & 0.175 & [0.154, 0.196] \\
+Random & 0.172 & [0.147, 0.198] \\
+\hline
+GPT-4.1 & 0.197 & [0.171, 0.224] \\
+Claude Opus 4.1 & 0.229 & [0.201, 0.258]\\
+Gemini 2.5 Pro & 0.241& [0.216, 0.268]\\
+\hline
+\end{tabular}
+\caption{Mean Absolute Error (MAE) of Models and Baselines. Lower MAE values indicate better alignment with human judgments.}
+\label{tab:mae_results}
+\end{table}
+\FloatBarrier
+
+As Table \ref{tab:mae_results} shows, each of the LLMs systematically underperforms both the Random and the Equanimity baselines. The magnitude of MAEs across models is also large, with a minimum of 0.197 and a maximum of 0.241 on a 0.0 to 1.0 scale. Table \ref{tab:mae_vs_baselines} presents the difference in MAE between each model and each baseline, including significance statistics and 95\% confidence intervals.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcc}
+\hline
+\textbf{Baseline} & \textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} \\
+\hline
+\multirow{3}{*}{Equanimity}& GPT-4.1 & +0.022 & [-0.013, +0.061]\\
+ & Claude Opus 4.1 & +0.054** & [+0.013, +0.096] \\
+ & Gemini 2.5 Pro & +0.067***& [+0.026, +0.108]\\
+\hline
+\multirow{3}{*}{Random}& GPT-4.1 & +0.027 & [-0.008, +0.064] \\
+ & Claude Opus 4.1 & +0.059*** & [+0.020, +0.098] \\
+ & Gemini 2.5 Pro & +0.072***& [+0.035, +0.109]\\
+\hline
+\end{tabular}
+\caption{MAE difference between each model and two baselines. Equanimity baseline always predicts 50\%; Random baseline uses normal distribution with human mean and standard deviation. Positive differences indicate worse performance than baseline. Significance: $*** p < 0.01, ** p < 0.05, * p < 0.1$.}
+\label{tab:mae_vs_baselines}
+\end{table}
+
+As Table \ref{tab:mae_vs_baselines} shows, Claude Opus 4.1 and Gemini 2.5 Pro have statistically significantly worse MAEs than both the the Equanimity baseline ($p = 0.010$, $p = 0.001$, respectively) and the Random baseline ($p = 0.002$, $p < 0.001$, respectively). GPT-4.1 also has a worse MAE than the Equanimity baseline ($p = 0.242$) and the Random baseline ($p = 0.134$), but not statistically significantly worse. 
+
+These results suggest that LLMs do not provide useful information in interpretive questions concerning the ordinary meanings of words. This is problematic, given that one of the primary benefits claimed for LLM legal interpreters is their ability to access latent information about ordinary linguistic meaning.
+
+Given critiques on LLM judging on grounds of interpretability, legitimacy, and equity \citep{fine2025public, Afrouzi2023, Michaels2020, Posner2025, re2019}, LLMs would face an uphill battle in legal interpretation even if they were objectively accurate tools to ascertain ordinary meaning. In light of these concerns, it would be a poor bargain to rely on LLMs that are less legitimate \textit{and} systematically inaccurate.
+
+\subsection{Post-Training Exacerbates Inaccurate Judgments}
+\label{sec:deviate}
+
+Some critics of LLM judging have speculated that post-training might induce LLMs to deviate from ordinary meaning \citep{lee2024artificial}, but this possibility has never been tested empirically. The goal of post-training is generally to render LLMs more helpful and less offensive. Reflecting ordinary meaning is typically orthogonal to these goals, and LLMs therefore might continue to reflect ordinary meaning in spite of post-training. In fact, insofar as post-training generally makes models ``smarter'' or more accurate, it might even improve LLMs' ability to reflect ordinary meaning.
+
+To test these issues, I evaluate how LLMs respond to questions about the ordinary meaning of language before and after post-training. Open-source LLMs are sometimes released in two versions, one that has undergone pre-training only and one that has undergone post-training as well \citep{huggingface2025deepseek,huggingface2025falcon,huggingface2025llama}. By asking the same interpretive question of both the pre-trained and post-trained LLM, we can empirically evaluate whether they reach different linguistic or legal conclusions. If an LLM gives different answers after post-training, that would be evidence that post-training makes LLMs unreliable arbiters of ordinary meaning.
+
+I assemble a set of three open-source LLM pairs, each consisting of a base model and its post-trained counterpart, from the Falcon, RedPajama, and StableLM families of models, all post-trained using preference fine-tuning (PFT). The test battery consists of the same 100 questions about ordinary linguistic meaning used in the previous section.\footnote{To ensure consistent evaluation across models (specifically in order to induce purely predictive models to give clear answers), I employ few-shot prompting with standardized examples demonstrating the expected yes/no response format. A pre-trained model functions like an autocomplete, so the appropriate prompt would be something like: ``Is a `screenshot' a `photograph'? The correct answer is: \_\_'' leaving the LLM to fill in the correct judgment. Post-trained models are usually tuned to function like chatbots, so the appropriate prompt would be very slightly different, something like: ``Is a `screenshot' a `photograph'?''. For each query, I extract not just the model's binary response but also its underlying probability estimates for both ``yes'' and ``no'' answers, allowing for quantitative comparison of response distributions between base and post-trained models. The experimental setup is designed to control for potential confounds. To minimize the impact of sampling temperature, I focus on the models' raw probability estimates rather than their sampled responses. Specifically, I use the same relative-probability methodology described in Section \ref{sec:relative_prob}, extracting the normalized probability of a ``yes'' response for each question. }
+
+Helpfully, we can also compare the assessments of the pre-trained and post-trained models with our human evaluations on ordinary-meaning questions. The results confirm that post-training generally worsens model alignment with human judgments:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{Base MAE} & \textbf{Post-trained MAE} & \textbf{Difference} \\
+& \textbf{[95\% CI]} & \textbf{[95\% CI]} & \textbf{[95\% CI]} \\
+\hline
+Falcon & 0.333 [0.299, 0.370] & 0.468 [0.427, 0.506] & +0.135*** [+0.082, +0.188] \\
+StableLM & 0.369 [0.329, 0.407] & 0.341 [0.304, 0.378] & -0.030 [-0.084, +0.024] \\
+RedPajama & 0.313 [0.230, 0.386] & 0.437 [0.320, 0.543] & +0.122* [-0.010, +0.254] \\
+\hline
+\end{tabular}
+\caption{Mean Absolute Error (MAE) comparing base and post-trained models against average human responses, with differences between post-trained and base models. Lower MAE values indicate better alignment with human judgments. Positive differences indicate worse performance after post-training. Statistical significance: *** $p < 0.01$, ** $p < 0.05$, * $p < 0.1$.}
+\label{tab:human_llm_errors_combined}
+\end{table}
+
+The statistical analysis reveals heterogeneous effects across model families. Falcon shows the most consistent degradation with post-training, with MAE significantly worse ($p = 0.001$). RedPajama also exhibits degradation, though the MAE increase is only significant with 90\% confidence ($p = 0.074$). StableLM does not worsen performance after post-training, with a slightly negative but near-zero change in MAE ($p = 0.317$). Thus, while post-training generally worsens model alignment with human judgments, the effect varies by model family.
+
+These findings largely validate concerns that post-training techniques might compromise LLMs' ability to reflect ordinary meaning as captured in their training corpora. Post-training generally degrades alignment with how humans interpret ordinary meaning, though this effect varies by model family.
+
+This finding brings with it a set of tradeoffs. While base models may more closely reflect patterns in their training corpora and align better with human judgments, they are also typically less user-friendly and more prone to producing outputs that are poorly formatted or unhelpful. Post-trained models, while more consistent in format and often more helpful in explanations, introduce deviations from both the base model's assessment of ordinary meaning and human consensus that may be difficult to predict. As Section \ref{sec:alternatives} discusses, it may be possible to tweak post-training methods to make models more user-friendly while still preserving ordinary meaning.
+
+\section{Implications, Extensions, and Alternatives}
+\label{sec:implications_extensions_alternatives}
+
+The results above reveal significant limitations in LLMs' ability to serve as reliable legal interpreters. My findings demonstrate that LLM judgments suffer from four critical vulnerabilities: sensitivity to prompt phrasing, variation depending on how model outputs are processed, substantial disagreement between different models, and deviations from ordinary meaning due to post-training procedures.
+
+\subsection{Practical Implications for AI Legal Interpretation}
+
+While LLMs can help judges conduct research or generate interpretive hypotheses, their current limitations suggest they should be approached with skepticism.
+
+Several practical recommendations emerge from this research. First, scholars and judges should extract model log probabilities and explicitly analyze them, rather than treating them as probability distributions reflecting uncertainty in model predictions. Second, when consulting LLMs for interpretive guidance, they should systematically vary prompt phrasings and output processing methods to assess the stability of model judgments. Third, they should consult multiple different models to determine whether there is consensus on the interpretive question at hand. Fourth, they should be transparent about the specific model version, prompting technique, and output processing method used, to allow for critical examination of these methodological choices.
+
+\subsection{Alternatives to Directly Prompting LLMs}
+\label{sec:alternatives}
+
+The limitations of current LLMs for legal interpretation do not necessarily preclude their use entirely, but they do at least suggest the need for more sophisticated approaches that address LLM vulnerabilities. Several techniques could potentially mitigate the problems identified in this study.
+
+\subsubsection{Post-Training for Legal Interpretation}
+
+One approach is to modify post-training methods specifically to facilitate legal interpretation or reflect ordinary meaning. For instance, models could be post-trained on datasets of ordinary meaning judgments, or on pairs of legal texts and corresponding judicial interpretations. Specialized post-training with RLHF, PFT, or other techniques, could be tailored to preserve a model's ability to reflect ordinary meaning while making it more useful for legal applications. Alternatively, a model could be minimally instruction-tuned to answer questions without modifying the substantive answers the model provides. These approaches would make instruction-tuned LLMs more functionally useful than base models, while still preserving their ability to reflect ordinary meaning.
+
+However, these methods would also introduce new challenges, including the substantial effort involved in curating a dataset of legal judgments---it would be challenging to conduct RLHF without at least 100,000 annotated judgments. Moreover, the dataset would need to be carefully curated to reflect a realistic range of linguistic usages and interpretive methodologies.
+
+\subsubsection{Structured Elicitation}
+
+A second approach would move beyond simple question-answer interactions to more structured protocols for eliciting interpretive judgments from LLMs. Carefully designed elicitation procedures could potentially constrain variation based on choice of prompt and model, producing more consistent results.
+
+Several structured elicitation techniques could enhance reliability in legal interpretation. Multi-step reasoning protocols would break down interpretive questions into a series of smaller steps, each addressing a specific aspect of meaning such as dictionary definitions, common usage patterns, and contextual considerations \citep{arbel2024generative}. Adversarial prompting strategies \citep{he2024agentscourtbuildingjudicialdecisionmaking, fang2025cfmad} would explicitly ask the model to consider arguments for multiple possible interpretations before reaching a conclusion, potentially reducing overconfidence and sensitivity to initial framing. Developing and validating standardized prompt templates could potentially minimize sensitivity to superficial variations while capturing the essential elements of interpretive questions. 
+
+These structured protocols could be combined with techniques from the explainable AI literature to make transparent the basis for interpretive judgments. For instance, models could be required to explicitly identify the textual features, linguistic patterns, or reasoning steps that support their interpretive conclusions.
+
+\subsubsection{Hybrid Human-AI Approaches}
+
+Finally, rather than treating LLMs as autonomous legal interpreters, they might be more effectively deployed as assistants that give advice on narrow, specific questions rather than opining on key issues in a given case. 
+
+LLMs could enhance judicial decisionmaking in various ways. They could generate hypotheses, identifying possible interpretations that human judges might not initially consider. LLMs could also function as research tools, leveraging their training on vast text corpora to identify relevant usage examples, precedents, or linguistic patterns that bear on interpretive questions. Some models might be specifically trained for bias detection, helping to flag potential biases or inconsistencies in human reasoning. Additionally, LLMs could facilitate deliberation by playing devil's advocate and providing competing interpretive arguments, helping judges to more thoroughly explore the implications of different readings. In one particularly interesting current application, \citet{liu2024judges} discuss how Chinese judges make decisions without an LLM, then use LLMs to assist them in drafting opinions. 
+
+These hybrid approaches maintain human oversight, mitigating concerns about reliability while potentially improving the quality, consistency, and transparency of legal interpretation.
+
+\subsection{Intertemporal External Validity}
+
+A skeptical reader might agree that off-the-shelf LLMs are unreliable interpreters today, but wonder whether the problem will persist. After all, LLM providers are constantly working to improve the performance of their models, and perhaps general improvements will translate into improvements in reliability, sensitivity, calibration, and the other issues discussed in this paper. Thus this paper might have a problem of ``intertemporal'' external validity: although off-the-shelf LLMs are unreliable today, who knows whether they will be unreliable in the future?
+
+There are technical reasons to suspect that unreliability will persist. In recent years, LLMs have shown the most dramatic improvement on objective, verifiable tasks, because these are the ones most amenable to reinforcement learning \citep{yue2025}. In contrast, legal interpretation is inherently subjective, and it is difficult to code answers as right or wrong in a way that would be useful in reinforcement learning. Moreover, computer scientists have found that calibration to specific tasks generally depends on fine-tuning within a specific domain \citep{xiao2025}. Because LLM designers generally do not focus on legal interpretation, there is no reason to believe that continued performance improvements will work improvements in legal reliability.
+
+Moreover, the models studied in this paper (including the analysis in the Online Appendix) cover a wide range of release dates, from BigScience's T0-3B model, released in October 2021 (predating ChatGPT by more than a year) to GPT-5, released in August 2025. The models also cover a wide swath of training methods; T0-3B is a simple, pre-trained model that mostly reflects empirical language usage, whereas the post-trained models implement more sophisticated modern techniques like mixture-of-experts and speculative decoding. Online Appendix Section 5 describes how these more sophisticated techniques can actually exacerbate inconsistencies in LLM outputs, and problems of unreliability have persisted across this range.
+
+Finally, if LLMs do improve and become more reliable legal interpreters, the findings in this Article are still relevant right now---at a time when judges are increasingly using LLMs to help decide real-world cases, as described in Section \ref{sec:background}. By demonstrating how LLMs are unreliable legal interpreters, this Article places the onus on their proponents to improve and then demonstrate LLM reliability, perhaps using the techniques proposed above. This Article therefore establishes a baseline from which to progress.
+
+\section{Conclusion}
+
+This study provides evidence that off-the-shelf LLMs are not yet sufficiently reliable to provide independent interpretations of the law or ordinary language. Judges and scholars should approach LLM outputs with skepticism and an awareness of their sensitivity to prompt variation, model selection, and post-training procedures.
+
+More sophisticated approaches—including domain-specific fine-tuning, ensemble methods, structured elicitation, and hybrid human-AI frameworks—may help to address these challenges. Overall, legal interpreters interested in AI should move beyond simple question-answer interactions toward more carefully designed systems with appropriate safeguards.
+
+\bibliographystyle{chicago}
+\bibliography{artificial_interpretation}
+
+\clearpage
+\appendix
+\section*{Appendix}
+\addcontentsline{toc}{section}{Appendix}
+
+\section{Scenario Text}
+\label{appx:scenario_text}
+
+\begin{enumerate}
+    \item \textbf{Insurance Policy Water Damage Exclusion:} ``An insurance policy contains the following exclusion: `We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not."
+    
+    \item \textbf{Prenuptial Agreement Filing Date:} ``In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number of years of marriage for calculating the payment amount? The agreement states that payment will be based on `the number of full years they have been married at the time a Petition for Dissolution of Marriage is filed.' Please analyze whether `a Petition' refers to the first or ultimate petition filed."
+    
+    \item \textbf{Contract Term Affiliates Interpretation:} ``Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term binds [Company] and its `other affiliate[s]' to a 50/50 royalty split after deducting fees charged by third parties that intermediate in foreign markets. Please analyze whether the term `other affiliate[s]' includes only existing affiliates or includes future affiliates as well."
+    
+    \item \textbf{Construction Payment Terms:} ``A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10\%. After a phone call where they allegedly agreed payment would be made `in the usual manner', the foundry accepted in writing. If one party claims it is customary to pay 85\% of payments due at the end of every month, but the other argues payments are only due upon substantial completion, how should the term `usual manner' be interpreted? Does this term refer to the monthly installment payments or to payment upon completion?"
+    
+    \item \textbf{Insurance Policy Burglary Coverage:} ``You are analyzing an insurance policy dispute. The policy states: `[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry therein by actual force and violence, of which force and violence there are visible marks made by tools, explosives, electricity or chemicals.' A business has experienced a theft where there is clear evidence that a third party committed the burglary. No inside job is suspected. Based on these terms, would this policy provide compensation for losses resulting from this substantiated third-party burglary? Please analyze whether coverage would be provided."
+\end{enumerate}
+
+\section{Robustness to Alternative Models: GPT-5, \\Claude Opus 4.1, and Gemini 2.5 Pro}
+\label{appx:alternative_models}
+As a robustness check for the analysis in Section \ref{sec:prompt_sensitivity}, I also analyze three other leading LLMs: GPT-5, Anthropic's Claude Opus 4.1, and Google's Gemini 2.5 Pro. These models are all thinking models that generate reasoning tokens in advance of producing final responses. At the time of writing, the producers of these thinking models do not reveal the thinking tokens to the user, making it impossible to study their log probabilities. Consequently, I can only test verbalized confidence, and I do so by taking the raw stated confidence score rather than weighted confidence. These results are non-deterministic and not directly replicable, although running the same analysis in the future will presumably produce asymptotically similar results.
+
+One additional note of caution: the prompt perturbations were generated by Claude Opus 4.1, which was also then tested on its own perturbations. Although the findings below with respect to Claude Opus 4.1 are consistent with the other models, perturbing and testing with the same model may have unpredictable results, and I include findings for Claude only for completeness and since there are so few frontier AI labs.
+
+Table \ref{tab:three_model_confidence_stats} presents the summary statistics for the models' verbalized confidence scores across the five legal interpretation scenarios.
+
+% Comprehensive Table: Verbalized Confidence Statistics for All Three Models
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Model /} & \textbf{Mean} & \textbf{Std Dev} & \textbf{2.5th} & \textbf{97.5th} & \textbf{95\% CI} \\
+\textbf{Scenario} & \textbf{Confidence} & & \textbf{Percentile} & \textbf{Percentile} & \textbf{Width} \\
+\hline
+\multicolumn{6}{l}{\textbf{GPT-5}} \\
+\hline
+1 & 9.03 & 4.11 & 3.00 & 20.00 & 17.00 \\
+2 & 33.93 & 18.14 & 15.00 & 78.00 & 63.00 \\
+3 & 22.32 & 10.01 & 10.00 & 60.00 & 50.00 \\
+4 & 83.48 & 7.12 & 67.00 & 92.00 & 25.00 \\
+5 & 32.49 & 23.77 & 10.00 & 90.00 & 80.00 \\
+\hline
+\multicolumn{6}{l}{\textbf{Claude Opus 4.1}} \\
+\hline
+1 & 31.67 & 23.95 & 5.00 & 75.00 & 70.00 \\
+2 & 51.87 & 28.02 & 15.00 & 75.00 & 60.00 \\
+3 & 25.21 & 11.39 & 15.00 & 75.00 & 60.00 \\
+4 & 70.49 & 16.01 & 1.00 & 75.00 & 74.00 \\
+5 & 63.67 & 37.58 & 0.00 & 100.00 & 100.00 \\
+\hline
+\multicolumn{6}{l}{\textbf{Gemini 2.5 Pro}} \\
+\hline
+1 & 49.96 & 25.69 & 5.00 & 95.00 & 90.00 \\
+2 & 41.69 & 35.98 & 5.00 & 100.00 & 95.00 \\
+3 & 39.38 & 13.65 & 20.00 & 65.00 & 45.00 \\
+4 & 44.03 & 22.46 & 10.00 & 90.00 & 80.00 \\
+5 & 91.39 & 18.13 & 19.88 & 100.00 & 80.00 \\
+\hline
+\end{tabular}
+\caption{Summary statistics for prompt perturbations with respect to verbalized confidence scores for GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro. This table presents confidence assessments from three large language models on the same set of legal interpretation prompts. Each model was directly queried for its confidence on a 0-100 scale. The same perturbations of five legal scenarios were tested across all models. The 95\% confidence interval width measures variation in each model's confidence assessments across different phrasings of the same legal question.}
+\label{tab:three_model_confidence_stats}
+\end{table}
+
+Figure \ref{fig:three_model_stacked_visualization} visualizes the distribution of verbalized confidence scores across all prompts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{three_model_stacked_visualization.png}
+    \caption{Distribution of raw verbalized confidence scores across all prompts. This figure shows GPT-5's, Claude Opus 4.1's, and Gemini 2.5 Pro's self-reported confidence levels when directly asked to rate their certainty about legal interpretations on a 0-100 scale. Each colored point represents the model's verbalized confidence score for one of 2000 rephrasings per legal scenario. The spread of points on the $x$-axis within each question is jitter added for visibility. Prompts 1-5 correspond to the same legal questions as in previous figures. Black dots show mean confidence levels with 95\% confidence intervals.}
+    \label{fig:three_model_stacked_visualization}
+\end{figure}
+\FloatBarrier
+
+In general, the thinking models are also very sensitive to prompt perturbations. While GPT-4.1 has a mean 95\% confidence interval width of 49.80, GPT-5's is 47.0, Claude Opus 4.1's is 72.8, and Gemini 2.5 Pro's is 78.0. Moreover, mean confidence scores vary widely between models---for example, GPT-5's most confident judgments are on scenarios 1 and 4, for which Gemini 2.5 Pro gives an ambivalent and modestly opposite mean response, respectively. The scenarios for which models have more stable judgments also vary between models---for example, GPT-5 has stable judgments on scenarios 1 and 4, but Claude Opus 4.1 has the most stable judgments on scenarios 2 and 3, and Gemini 2.5 Pro has the most stable judgments on scenario 3.
+
+
+\section{Robustness to Alternative Perturbation Methods: Irrelevant Factual Statements}
+\label{appx:irrelevant_perturbations}
+
+To test whether LLMs can distinguish between legally relevant and irrelevant information, I conduct an additional experiment where true but irrelevant statements are inserted into the legal scenarios described in Section \ref{appx:scenario_text}. This experiment draws on work by \citet{shi2023largelanguagemodelseasily} suggesting that LLMs can give different answers when provided with irrelevant context. I create a corpus of 200 facts unrelated to law (e.g., ``Mount Everest is approximately 8,848 meters tall,'' ``The speed of light in vacuum is 299,792,458 meters per second''). A list of the irrelevant facts is in Online Appendix Section 2, for reference. For each of the five legal scenarios, I generate perturbations by inserting the irrelevant sentence at some point in the legal scenario. For example, I perturb one of the legal scenarios by inserting the red text as follows:
+
+\begin{quote}
+An insurance policy contains the following exclusion: ``We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.'' {\color{red}Mount Everest is approximately 8{,}848 meters tall.} If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+\end{quote}
+
+I systematically insert each irrelevant statement as an additional sentence at the beginning, end, and between all sentences in the scenario (one sentence inserted at a time; for example, in the above scenario, I would generate four perturbations using the fact about Mount Everest. Across 200 factual sentences, I therefore generate 800 perturbations for this scenario.
+
+\subsection{Results}
+
+Table \ref{tab:irrelevant_ci_width} presents the width of 95\% confidence intervals for model confidence scores when irrelevant statements are inserted into legal scenarios. These widths reveal the degree of uncertainty introduced by legally irrelevant information.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Scenario} & \textbf{GPT-5} & \textbf{Claude Opus 4.1} & \textbf{Gemini 2.5 Pro} \\
+\hline
+1 & 25.0 & 60.0 & 80.0 \\
+2 & 30.0 & 60.0 & 95.0 \\
+3 & 20.0 & 50.0 & 65.0 \\
+4 & 40.0 & 35.0 & 20.0 \\
+5 & 90.0 & 60.0 & 67.6 \\
+\hline
+\textbf{Mean} & 41.0 & 53.0 & 65.5 \\
+\hline
+\end{tabular}
+\caption{Width of 95\% confidence intervals for model confidence scores when irrelevant factual statements are inserted into legal scenarios. Values represent the range (upper bound minus lower bound) of the 95\% confidence interval across all perturbations. Larger values indicate greater variability in confidence scores due to irrelevant information, suggesting less robust legal reasoning.}
+\label{tab:irrelevant_ci_width}
+\end{table}
+
+The 95\% confidence interval widths are broadly consistent with the main results, revealing how irrelevant information affects model certainty. Gemini 2.5 Pro exhibits the widest average intervals (65.5 points), while Claude Opus 4.1 shows moderate variability (53.0 points). GPT-5 displays the smallest average width (41.0 points) but with high scenario-specific variation, consistent with the main results.
+
+Figure \ref{fig:irrelevant_confidence_distributions} shows the distribution of confidence scores across perturbations, revealing that even when models maintain consistent judgments, their confidence levels fluctuate substantially.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{irrelevant_info_three_model_stacked_visualization.png}
+    \caption{Distribution of confidence scores for legal judgments when irrelevant statements are inserted. Each violin plot shows the distribution of confidence scores (0-100) across all perturbations when irrelevant context is added to a given model-scenario combination. The spread of points on the $x$-axis within each question is jitter added for visibility. Black dots indicate means, and bars indicate 95\% confidence intervals.}
+    \label{fig:irrelevant_confidence_distributions}
+\end{figure}
+
+The confidence distributions reveal another layer of instability. Even when models maintain consistent binary judgments, their confidence scores vary widely---standard deviations ranging from 5.7 to 33.9 points on a 100-point scale. This suggests that irrelevant information creates uncertainty in the models' decision-making processes, even when the final output remains unchanged.
+
+
+
+\section{Testing the Normality of Perturbation Results}
+\label{appx:perturbation_normality}
+
+In Section \ref{sec:prompt_sensitivity}, I assess how sensitive LLM judgments are to minor variations in prompt phrasing. One corollary question is whether the distribution of model responses follows a normal distribution, which would suggest random noise around a stable central tendency, or exhibits a different pattern that might indicate more systematic instability or bias.
+
+\subsection{Methodology for Normality Testing}
+
+I employ two complementary approaches to assess the normality of the response distributions: standard normality tests and truncated normal distribution tests that account for the bounded nature of the data.
+
+\subsubsection{Standard Normality Tests}
+
+For each prompt and measurement type (relative probabilities and verbalized confidence), I conduct Kolmogorov-Smirnov (KS) and Anderson-Darling (AD) tests against a normal distribution. The KS test compares the empirical cumulative distribution function of the sample data to the cumulative distribution function of a normal distribution with the same mean and standard deviation. The AD test is similar but places more weight on the tails of the distribution, making it more sensitive to deviations in these regions.
+
+I implement the tests as follows:
+
+\begin{enumerate}
+    \item For each prompt and measurement type, I extract the observed values from the 2000 rephrasings.
+    \item I fit a normal distribution to the data by calculating the maximum likelihood estimates of the mean ($\mu$) and standard deviation ($\sigma$).
+    \item I conduct a KS test using the \texttt{kstest} function from SciPy, comparing the observed data against a normal distribution with parameters $\mu$ and $\sigma$.
+    \item I conduct an AD test using the \texttt{anderson} function from SciPy, again testing against a normal distribution.
+    \item I record the test statistics, p-values, and whether the null hypothesis of normality is rejected at the 0.05 significance level.
+\end{enumerate}
+
+Table \ref{tab:normality_test_results} presents the results of the normality tests for both relative probability and weighted confidence distributions across all five prompts. For each prompt and measurement type, the table reports the distribution mean and standard deviation, along with the results of both Kolmogorov-Smirnov (KS) and Anderson-Darling (AD) tests.
+
+The KS test results include the test statistic, p-value, and a boolean indicator of whether the distribution can be considered normal ($p > 0.05$). Similarly, the AD test results show the test statistic, an approximated p-value, the critical value at 5\% significance level, and a boolean indicator of normality based on whether the test statistic is below the critical value.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ccccccc}
+\hline
+Prompt & KS & KS & KS Normal & AD & AD Critical & AD Normal \\
+ & Statistic & p-value & ($p>0.05$) & Statistic & Value (5\%) & (stat$<$crit) \\
+\hline
+1 (prob) & 0.506 & 0.000 & FALSE & 1441.575 & 0.786 & FALSE \\
+1 (conf) & 0.151 & 0.000 & FALSE & 170.081 & 0.786 & FALSE \\
+2 (prob) & 0.485 & 0.000 & FALSE & 1285.570 & 0.786 & FALSE \\
+2 (conf) & 0.204 & 0.000 & FALSE & 269.523 & 0.786 & FALSE \\
+3 (prob) & 0.250 & 0.000 & FALSE & 431.701 & 0.786 & FALSE \\
+3 (conf) & 0.087 & 0.000 & FALSE & 63.071 & 0.786 & FALSE \\
+4 (prob) & 0.468 & 0.000 & FALSE & 1356.433 & 0.786 & FALSE \\
+4 (conf) & 0.169 & 0.000 & FALSE & 175.441 & 0.786 & FALSE \\
+5 (prob) & 0.296 & 0.000 & FALSE & 545.725 & 0.786 & FALSE \\
+5 (conf) & 0.088 & 0.000 & FALSE & 42.936 & 0.786 & FALSE \\
+\hline
+\end{tabular}
+\caption{Normality Test Results for Model Responses. This table tests whether GPT-4.1's response distributions follow a normal distribution across 2000 prompt rephrasings for five legal scenarios. Two measurement methods are tested: relative probabilities (prob) extracted from log outputs, and verbalized confidence scores (conf) from direct 0-100 queries. The Kolmogorov-Smirnov (KS) test compares empirical distributions to theoretical normal distributions with matching means and standard deviations. The Anderson-Darling (AD) test performs similar comparisons but weights tail deviations more heavily. For both tests, rejection of normality occurs when $p < 0.05$ (KS) or when the test statistic exceeds the critical value (AD).}
+\label{tab:normality_test_results}
+\end{table}
+\FloatBarrier
+
+As Table \ref{tab:normality_test_results} shows, all distributions across all prompts fail both normality tests. The p-values for the KS tests are all approximately zero, and all AD test statistics substantially exceed their critical values (in fact, AD test statistics exceed critical values at the 99.999\% significance level as well). This provides evidence that the distributions of model responses do not follow a normal distribution, suggesting that variations in model outputs due to prompt rephrasing are not simply random noise around a central tendency.
+
+\subsubsection{Truncated Normal Distribution Tests}
+
+Since both relative probabilities and verbalized confidence scores are bounded (relative probabilities between 0 and 1, confidence scores between 0 and 100), a standard normal distribution may not be appropriate. To account for this, I also test the fit of a truncated normal distribution with zero-inflation and one-inflation to better capture the characteristics of the bounded data.
+
+The truncated normal tests proceed as follows:
+
+\begin{enumerate}
+    \item I calculate the mean and standard deviation of the interior values (those strictly between 0 and 1).
+    \item I use an iterative optimization approach to find the parameters of an underlying normal distribution that, when truncated to the [0,1] interval, would produce a distribution with the same mean and standard deviation as the observed data.
+    \item I simulate data from this optimized truncated normal distribution and compare it to the observed data using a two-sample KS test.
+    \item I visualize the fit by creating comparison plots of the simulated versus observed data, including both QQ plots and histogram comparisons.
+\end{enumerate}
+
+Table \ref{tab:truncated_normal_test_results} presents the results of fitting a truncated normal distribution with zero/one inflation to the data. For each prompt and measurement type, the table shows the model parameters, error metrics, and statistical test results.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{ccccccc}
+\hline
+Prompt & KS & KS & KS Normal & AD & AD Critical & AD Normal \\
+ & Statistic & p-value & ($p>0.05$) & Statistic & Value (5\%) & (stat$<$crit) \\
+\hline
+1 (prob) & 0.571 & 0.000 & FALSE & 4411.617 & 0.785 & FALSE \\
+1 (conf) & 0.133 & 0.000 & FALSE & 219.479 & 0.785 & FALSE \\
+2 (prob) & 0.735 & 0.000 & FALSE & 14481.654 & 0.785 & FALSE \\
+2 (conf) & 0.202 & 0.000 & FALSE & 328.838 & 0.785 & FALSE \\
+3 (prob) & 0.429 & 0.000 & FALSE & 1992.125 & 0.785 & FALSE \\
+3 (conf) & 0.086 & 0.000 & FALSE & 76.467 & 0.785 & FALSE \\
+4 (prob) & 0.875 & 0.000 & FALSE & 27070.127 & 0.785 & FALSE \\
+4 (conf) & 0.167 & 0.000 & FALSE & 216.807 & 0.785 & FALSE \\
+5 (prob) & 0.476 & 0.000 & FALSE & 2618.513 & 0.785 & FALSE \\
+5 (conf) & 0.089 & 0.000 & FALSE & 49.633 & 0.785 & FALSE \\
+\hline
+\end{tabular}
+\caption{Truncated Normal Distribution Test Results for Model Responses. This table tests whether GPT-4.1's bounded response distributions follow truncated normal distributions with zero/one inflation. Kolmogorov-Smirnov (KS) and Anderson-Darling (AD) tests compare observed data to simulated truncated normal distributions.}
+\label{tab:truncated_normal_test_results}
+\end{table}
+\FloatBarrier
+
+As shown in the table, the normal distribution model fails to adequately capture the characteristics of the observed data for all prompts and measurement types. The Kolmogorov-Smirnov (KS) test p-values are all effectively zero, indicating significant differences between the observed data and the simulated normal distributions. Similarly, the Anderson-Darling (AD) test statistics are all well above their critical values (and again also exceed critical values at 99.999\% confidence), further confirming the poor fit of the normal distribution model.
+
+
+\subsection{Results of Normality Tests and Qualitative Graphs}
+
+The KS tests and AD tests for normality reject the null hypothesis of a normal distribution for all prompts and measurement types ($p < 0.001$ for all tests). This indicates that neither the relative probability distributions nor the verbalized confidence score distributions conform to a normal distribution.
+
+The truncated normal model with zero/one inflation also fails to adequately capture the distribution of responses, with KS tests and AD tests between observed and simulated data rejecting the null hypothesis of distributional equality ($p < 0.001$ for all tests).
+
+However, both KS and AD tests are notoriously sensitive to departures from the theoretical distribution that may not be qualitatively significant, especially as $N$ increases. To validate the KS and AD tests, and to visually examine the exact nature of the distributions' non-normality, I create quantile-quantile (QQ) plots for each prompt and measurement type. These plots compare the quantiles of the observed data against the quantiles of a theoretical normal distribution. If the data follow a normal distribution, the points on the QQ plot should approximate the reference line (the red dashed lines in the QQ plots below). Deviations from this line indicate departures from normality. The QQ plots also include 95\% confidence bands generated via bootstrap resampling to help assess the significance of these deviations.
+
+\subsection{Qualitative Analysis of Distribution Characteristics}
+
+In this Subsection, I present QQ plots and histograms for each prompt, including analysis using both standard normal and truncated normal theoretical distributions. 
+
+Based on standard descriptive interpretations of departures from the reference line in a QQ plot, the relative-probability graphs using a truncated-normal reference generally suggest bimodality (a tendency toward both extreme low and high values). The verbalized-confidence graphs using a truncated-normal reference generally suggest right skew (although the verbalized-confidence graphs are especially messy in their non-normality). The QQ plots for non-truncated naive normal distributions are similar but generally suggest even starker bimodality (as one would expect, since there will tend to be inflation at poles). 
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_1_confidence_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 1 verbalized confidence scores}
+    \label{fig:prompt1_conf_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_1_confidence_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 1 verbalized confidence scores}
+    \label{fig:prompt1_conf_truncated}
+\end{subfigure}
+
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_1_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 1 relative probabilities}
+    \label{fig:prompt1_prob_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_1_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 1 relative probabilities}
+    \label{fig:prompt1_prob_truncated}
+\end{subfigure}
+\caption{QQ plots and histograms for Prompt 1 response distributions. These visualizations compare GPT-4.1's response distributions to theoretical normal distributions for the insurance policy water damage exclusion scenario. QQ (quantile-quantile) plots compare observed quantiles against theoretical quantiles; points following the red dashed line indicate normal distribution. Histograms show empirical frequency distributions with theoretical normal curves overlaid. Verbalized confidence scores measure self-reported certainty (0-100); relative probabilities measure log-probability ratios between binary answers.}
+\label{fig:prompt1_distributions}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_2_confidence_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 2 verbalized confidence scores}
+    \label{fig:prompt2_conf_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_2_confidence_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 2 verbalized confidence scores}
+    \label{fig:prompt2_conf_truncated}
+\end{subfigure}
+
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_2_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 2 relative probabilities}
+    \label{fig:prompt2_prob_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_2_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 2 relative probabilities}
+    \label{fig:prompt2_prob_truncated}
+\end{subfigure}
+\caption{QQ plots and histograms for Prompt 2 response distributions. These visualizations analyze GPT-4.1's response patterns for the prenuptial agreement filing date interpretation scenario across 2000 prompt variations. QQ (quantile-quantile) plots compare observed quantiles against theoretical quantiles; points following the red dashed line indicate normal distribution. Histograms show empirical frequency distributions with theoretical normal curves overlaid. Verbalized confidence scores measure self-reported certainty (0-100); relative probabilities measure log-probability ratios between binary answers.}
+\label{fig:prompt2_distributions}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_3_confidence_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 3 verbalized confidence scores}
+    \label{fig:prompt3_conf_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_3_confidence_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 3 verbalized confidence scores}
+    \label{fig:prompt3_conf_truncated}
+\end{subfigure}
+
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_3_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 3 relative probabilities}
+    \label{fig:prompt3_prob_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_3_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 3 relative probabilities}
+    \label{fig:prompt3_prob_truncated}
+\end{subfigure}
+\caption{QQ plots and histograms for Prompt 3 response distributions. These plots examine GPT-4.1's interpretation of contract term ``affiliates'' (whether it includes only existing or also future affiliates) across 2000 prompt rephrasings. QQ (quantile-quantile) plots compare observed quantiles against theoretical quantiles; points following the red dashed line indicate normal distribution. Histograms show empirical frequency distributions with theoretical normal curves overlaid. Verbalized confidence scores measure self-reported certainty (0-100); relative probabilities measure log-probability ratios between binary answers.}
+    \label{fig:prompt_3_distributions}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_4_confidence_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 4 verbalized confidence scores}
+    \label{fig:prompt4_conf_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_4_confidence_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 4 verbalized confidence scores}
+    \label{fig:prompt4_conf_truncated}
+\end{subfigure}
+
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_4_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 4 relative probabilities}
+    \label{fig:prompt4_prob_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_4_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 4 relative probabilities}
+    \label{fig:prompt4_prob_truncated}
+\end{subfigure}
+\caption{QQ plots and histograms for Prompt 4 response distributions. These visualizations test normality of GPT-4.1's responses on payment terms interpretation (whether ``usual manner'' means monthly installments or payment upon completion) across 2000 prompt variations. QQ (quantile-quantile) plots compare observed quantiles against theoretical quantiles; points following the red dashed line indicate normal distribution. Histograms show empirical frequency distributions with theoretical normal curves overlaid. Verbalized confidence scores measure self-reported certainty (0-100); relative probabilities measure log-probability ratios between binary answers.}
+    \label{fig:prompt_4_distributions}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_5_confidence_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 5 verbalized confidence scores}
+    \label{fig:prompt5_conf_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_5_confidence_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 5 verbalized confidence scores}
+    \label{fig:prompt5_conf_truncated}
+\end{subfigure}
+
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_5_qq_plot.png}
+    \caption{Normal distribution QQ plot and histogram for Prompt 5 relative probabilities}
+    \label{fig:prompt5_prob_normal}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{prompt_5_truncated_model.png}
+    \caption{Truncated normal distribution QQ plot and histogram for Prompt 5 relative probabilities}
+    \label{fig:prompt5_prob_truncated}
+\end{subfigure}
+\caption{QQ plots and histograms for Prompt 5 response distributions. These plots analyze GPT-4.1's assessment of insurance policy burglary coverage (whether a policy covers third-party burglary with visible evidence) across 2000 prompt rephrasings. QQ (quantile-quantile) plots compare observed quantiles against theoretical quantiles; points following the red dashed line indicate normal distribution. Histograms show empirical frequency distributions with theoretical normal curves overlaid. Verbalized confidence scores measure self-reported certainty (0-100); relative probabilities measure log-probability ratios between binary answers.}
+\label{fig:prompt5_distributions}
+\end{figure}
+\FloatBarrier
+
+\section{Additional Survey Details}
+\label{appx:additional_details}
+
+\subsection{Respondent Demographics}
+\label{appx:demographic-info}
+
+Table \ref{tab:demographics} presents the demographic characteristics of the 1003 survey respondents in the sample. The sample was recruited through Prolific's representative sampling feature to match U.S. census demographics.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\hline
+\textbf{Characteristic} & \textbf{N} & \textbf{\%} \\
+\hline
+\textbf{Total Respondents} & 1003 & 100.0 \\
+\hline
+\textbf{Age} & & \\
+\quad Mean (SD) & 46.3 & (15.9) \\
+\quad Range & 19--93 & \\
+\hline
+\textbf{Gender} & & \\
+\quad Female & 514 & 51.2 \\
+\quad Male & 489 & 48.8 \\
+\hline
+\textbf{Ethnicity} & & \\
+\quad White & 637 & 63.5 \\
+\quad Black & 117 & 11.7 \\
+\quad Mixed & 110 & 11.0 \\
+\quad Other & 75 & 7.5 \\
+\quad Asian & 64 & 6.4 \\
+\hline
+\hline
+\textbf{Employment Status} & & \\
+\quad Full-Time & 335 & 33.4 \\
+\quad Part-Time & 110 & 11.0 \\
+\quad Not in paid work (e.g. homemaker, retired or disabled) & 99 & 9.9 \\
+\quad Unemployed (and job seeking) & 47 & 4.7 \\
+\quad Other & 23 & 2.3 \\
+\quad Due to start a new job within the next month & 3 & 0.3 \\
+\hline
+\end{tabular}
+\begin{minipage}{0.95\textwidth}
+\vspace{0.1cm}
+\footnotesize
+
+\end{minipage}
+\caption{Survey Respondent Demographics. This table presents the demographic profile of all survey participants. The sample excludes 5 participants who declined to consent to the survey.}
+\label{tab:demographics}
+\end{table}
+\FloatBarrier
+
+The demographic data confirm that the sample was representative. The sample was nearly balanced on gender and had age and ethnic diversity approximating U.S. census proportions. High mean prior study approvals ($\mu$ = 3,797) indicate experienced research participants likely to provide reliable responses. All participants were U.S. residents and native English speakers, important for survey questions involving ordinary meaning in American English.
+
+\subsection{Example Screenshot}
+
+Figure \ref{fig:survey_example} shows a representative screenshot from the survey interface. Participants viewed questions about semantic relationships and provided responses using continuous 0-100 scales, allowing for nuanced judgments beyond binary classifications.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.0\textwidth]{survey_example.jpg}
+\caption{Example survey interface screenshot. This figure shows the user interface presented to human participants in the survey. Participants answered questions about ordinary meaning using continuous 0-100 scales, where higher values indicated stronger agreement with the semantic relationship. Each participant was presented 10 questions total, although the screenshot includes only four randomly selected questions.}
+\label{fig:survey_example}
+\end{figure}
+\FloatBarrier
+
+\subsection{Compensation}
+
+Prolific requires a minimum reward of \$8 per hour. I estimated that the eleven-question battery (10 substantive questions and 1 attention check, plus disclosures and instructions) would take approximately 1 minute and paid \$0.20 per respondent (estimated at \$12 per hour). The actual median completion time was 1 minute and 21 seconds, resulting in median compensation of \$8.89 per hour.
+
+\subsection{Distribution of Survey Responses}
+
+Figure \ref{fig:survey_mean_distribution} shows the distribution of mean responses for each question from the survey. The distribution has a reasonably wide spread and is not fully normally distributed; both these features will tend to decrease the performance of the Equanimity and Random baselines.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ground_truth_distribution_simple.png}
+    \caption{Distribution of mean survey responses. This histogram plots the mean percentage of ``Yes" responses from survey respondents across all 100 questions. The solid red line plots a smoothed LOESS empirical distribution curve. The dashed red line indicates the mean response.}
+    \label{fig:survey_mean_distribution}
+\end{figure}
+\FloatBarrier
+
+\section{Additional Results for the Effects of Post-Training on Questions of Ordinary Meaning}
+
+The analysis reveals varying degrees of consistency between base models and their instruction-tuned counterparts. Table \ref{tab:base_instruct_correlations} presents the Pearson correlation coefficients between the relative probabilities assigned by each base model and its instruction-tuned version across all test questions.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Model Family} & \textbf{Correlation} & \textbf{p-value} \\
+\hline
+StableLM & 0.258 & 0.073 \\
+Falcon & 0.617 & 0.000 \\
+RedPajama & 0.497 & 0.000 \\
+\hline
+\end{tabular}
+\caption{Pearson correlation coefficients between base and instruction-tuned models' relative probabilities for binary classification tasks. This table quantifies how post-training affects model judgments by comparing base (pre-trained only) and instruction-tuned versions of the same models across 100 ordinary-meaning questions. Correlation values near 1.0 indicate post-training preserves the base model's linguistic judgments; values near 0 indicate substantial deviation. $p$-values test whether correlations significantly differ from zero.}
+\label{tab:base_instruct_correlations}
+\end{table}
+\FloatBarrier
+
+These correlations indicate substantial variation in how post-training affects different model families. The Falcon models show the strongest correlation ($\rho = 0.617$), suggesting that instruction tuning preserves much of the base model's assessment of ordinary meaning. RedPajama models show moderate correlation ($\rho = 0.497$), while StableLM models exhibit the weakest correlation ($\rho = 0.258$) at a level that is not statistically significant at the conventional $p < 0.05$ threshold.
+
+To visualize the distribution of differences between base and instruction-tuned models, I generate plots showing the relative probability differences across all test questions for each model family. Figure \ref{fig:prompt_rel_prob_differences} displays these distributions, with each point representing a specific question and the vertical position indicating how much the instruction-tuned model's assessment differs from its base counterpart. If instruction-tuning does not change the model's assessment of ordinary meaning, we would expect the distributions to be tightly clustered around zero.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{prompt_rel_prob_differences.png}
+    \caption{Distribution of relative probability differences between instruction-tuned and base models across all test questions. This figure visualizes how post-training affects model judgments across 100 ordinary-meaning questions for three model families (StableLM, Falcon, RedPajama). Each colored point represents one question's difference score, calculated as the instruction-tuned model's relative probability minus the base model's relative probability for answering ``yes'' to that question. Positive values indicate post-training makes the model more likely to answer ``yes''; negative values indicate less likely. Black dots show mean differences across all questions with 95\% confidence intervals. The horizontal dashed line at zero represents no change from post-training. Wide dispersion of points indicates that post-training effects vary substantially by question, even within the same model family. All instruction-tuned versions underwent preference fine-tuning (PFT) to improve model behavior.}
+    \label{fig:prompt_rel_prob_differences}
+\end{figure}
+\FloatBarrier
+
+Figure \ref{fig:prompt_rel_prob_differences} reveals several important patterns. First, all model families show substantial variation in how instruction tuning affects different questions, with some questions showing positive shifts (i.e., where instruction-tuned models more likely to answer ``yes'') and others showing negative shifts. Second, the mean differences are close to zero for all model families, suggesting that instruction tuning does not systematically bias models toward either ``yes'' or ``no'' responses. However, the wide 95\% confidence intervals (vertical error bars) indicate considerable uncertainty in the average effect of instruction tuning.
+
+To demonstrate how these differences vary across specific questions, Figure \ref{fig:prompt_rel_prob_heatmap} shows the relative probability differences for each question and model family. If instruction-tuning does not change the model's judgments, the heatmap should be mostly white (or lightly red or blue), with few darkly colored cells.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{prompt_rel_prob_heatmap.png}
+    \caption{Heatmap of relative probability differences between instruction-tuned and base models for each test question (rows) and model family (columns). This visualization shows how post-training affects individual question assessments across three model families. Each cell represents the change in relative probability for one question-model combination, calculated as (instruction-tuned probability minus base model probability). Questions are ordinary meaning assessments like ``Is a 'screenshot' a 'photograph'?'' (see Appendix for full list). Red cells indicate post-training increased the likelihood of answering ``yes''; blue cells indicate decreased likelihood. Color intensity corresponds to magnitude of change, with darker colors representing larger shifts. White cells indicate no change. Patterns across rows reveal question-specific effects of post-training; patterns within columns show model-specific tendencies.}
+    \label{fig:prompt_rel_prob_heatmap}
+\end{figure}
+\FloatBarrier
+
+The heatmap reveals that while some questions show consistent shifts across all model families (rows with similar coloration), many questions show model-specific effects of instruction tuning. This suggests that the impact of post-training on ordinary meaning assessment is not uniform but depends on both the specific question being asked and the model family being evaluated.
+
+Taken together, these results provide a nuanced answer to whether post-trained LLMs deviate from ordinary meaning. The moderate-to-strong correlations for Falcon ($\rho = 0.617$) and RedPajama ($\rho = 0.497$) models suggest that instruction tuning preserves much of the base models' assessment of ordinary meaning. However, the weaker correlation ($\rho = 0.258$) for StableLM and the substantial question-specific variation across all model families indicate that post-training can indeed alter how LLMs interpret ordinary meaning in ways that are difficult to predict \textit{a priori}.
+
+
+\end{document}

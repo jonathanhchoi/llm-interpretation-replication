@@ -1,0 +1,191 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\title{Power Analysis for LLM Evaluation Study:\\Detecting Differences from Baseline Performance}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Executive Summary}
+
+The current study comparing GPT-4.1, Gemini, and Claude Opus 4.1 against human assessments on 50 ordinary meaning questions is \textbf{underpowered} to detect statistically significant differences from a baseline model that always predicts 50\%. This power analysis determines that a minimum of \textbf{122 questions} is required to achieve 80\% statistical power for all models, with a recommended sample size of \textbf{183 questions} including a 50\% safety margin.
+
+\section{Current Study Results (N=50)}
+
+\subsection{Model Performance}
+
+Table~\ref{tab:current_results} presents the mean absolute error (MAE) for each model compared to human assessments, along with the difference from a 50\% baseline predictor.
+
+\begin{table}[h]
+\centering
+\caption{Current Study Results with 50 Questions}
+\label{tab:current_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{MAE} & \textbf{SD} & \textbf{Difference from 50\%} & \textbf{95\% CI} \\
+\midrule
+GPT-4.1 & 0.205 & 0.126 & 0.032 & [-0.017, 0.082] \\
+Gemini & 0.225 & 0.122 & 0.052 & [-0.000, 0.103] \\
+Claude Opus 4.1 & 0.232 & 0.129 & 0.059 & [0.008, 0.109]$^*$ \\
+\midrule
+Always 50\% (Baseline) & 0.180 & 0.106 & --- & --- \\
+Random (0-100) & 0.313 & 0.188 & --- & --- \\
+Hold-one-out Human & 0.153 & 0.102 & --- & --- \\
+\bottomrule
+\end{tabular}
+
+\vspace{2mm}
+\small{$^*$ Statistically significant (CI excludes zero)}
+\end{table}
+
+\subsection{Statistical Significance}
+
+Among the three models tested:
+\begin{itemize}
+    \item \textcolor{red}{$\times$} \textbf{GPT-4.1}: CI includes zero – not significantly different from baseline
+    \item \textcolor{red}{$\times$} \textbf{Gemini}: CI includes zero – not significantly different from baseline
+    \item \textcolor{green}{$\checkmark$} \textbf{Claude Opus 4.1}: CI excludes zero – significantly different from baseline
+\end{itemize}
+
+\section{Power Analysis}
+
+\subsection{Effect Sizes}
+
+The observed effect sizes (Cohen's $d$) for each model are:
+
+\begin{table}[h]
+\centering
+\caption{Effect Sizes and Their Interpretation}
+\label{tab:effect_sizes}
+\begin{tabular}{lcl}
+\toprule
+\textbf{Model} & \textbf{Cohen's $d$} & \textbf{Interpretation} \\
+\midrule
+GPT-4.1 & 0.254 & Small-to-medium effect \\
+Gemini & 0.426 & Small-to-medium effect \\
+Claude Opus 4.1 & 0.457 & Small-to-medium effect \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Statistical Power at Current Sample Size}
+
+With the current sample of 50 questions, the estimated statistical power to detect differences from the 50\% baseline is:
+
+\begin{itemize}
+    \item \textbf{GPT-4.1}: 42.0\% power (severely underpowered)
+    \item \textbf{Gemini}: 83.6\% power (adequate)
+    \item \textbf{Claude Opus 4.1}: 88.6\% power (adequate)
+\end{itemize}
+
+\subsection{Required Sample Sizes}
+
+Table~\ref{tab:sample_sizes} presents the required sample sizes to achieve various levels of statistical power for each model.
+
+\begin{table}[h]
+\centering
+\caption{Required Sample Sizes at Different Power Levels}
+\label{tab:sample_sizes}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{2}{c}{\textbf{GPT-4.1}} & \multicolumn{2}{c}{\textbf{Gemini}} & \multicolumn{2}{c}{\textbf{Claude}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+\textbf{Power} & Raw & +50\% & Raw & +50\% & Raw & +50\% \\
+\midrule
+70\% & 96 & 144 & 35 & 52 & 30 & 45 \\
+80\% & 122 & 183 & 44 & 66 & 38 & 57 \\
+85\% & 140 & 210 & 50 & 75 & 44 & 65 \\
+90\% & 164 & 245 & 59 & 88 & 51 & 76 \\
+95\% & 202 & 303 & 72 & 108 & 63 & 94 \\
+\bottomrule
+\end{tabular}
+
+\vspace{2mm}
+\small{Note: "+50\%" indicates sample size with a 50\% safety margin}
+\end{table}
+
+\section{Recommendations}
+
+\subsection{Minimum Sample Size Requirements}
+
+To ensure adequate power for \textbf{all} models (limited by GPT-4.1's smaller effect size):
+
+\begin{itemize}
+    \item \textbf{For 80\% power} (standard threshold):
+    \begin{itemize}
+        \item Minimum: 122 questions
+        \item Recommended (with margin): \textbf{183 questions}
+    \end{itemize}
+
+    \item \textbf{For 90\% power} (robust results):
+    \begin{itemize}
+        \item Minimum: 164 questions
+        \item Recommended (with margin): \textbf{245 questions}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Practical Considerations}
+
+\begin{enumerate}
+    \item \textbf{Effect Size Variation}: GPT-4.1 shows the smallest effect size (0.254), making it the limiting factor for sample size calculations. Claude shows the largest effect (0.457), explaining why it's the only model showing significance at N=50.
+
+    \item \textbf{Cost-Benefit Analysis}: Increasing from 50 to 180-200 questions represents a 3-4x increase in data collection effort but would provide conclusive evidence about whether these state-of-the-art LLMs perform better than a trivial baseline.
+
+    \item \textbf{Study Design Improvements}:
+    \begin{itemize}
+        \item Consider stratified sampling across question types
+        \item Use paired comparisons when possible (more powerful than independent samples)
+        \item Consider one-tailed tests if directional hypotheses are justified
+    \end{itemize}
+
+    \item \textbf{Incremental Approach}: Given resource constraints, consider:
+    \begin{itemize}
+        \item Phase 1: Add 70-80 questions (total N=120-130) to achieve 80\% power
+        \item Phase 2: Add another 50-60 if higher power is needed
+        \item Conduct interim analysis to assess if additional data collection is warranted
+    \end{itemize}
+\end{enumerate}
+
+\section{Conclusion}
+
+The current study with 50 questions is significantly underpowered to detect differences between GPT-4.1/Gemini and the 50\% baseline, achieving only 42\% and 84\% power respectively. To draw reliable conclusions about whether these advanced LLMs perform better than simply predicting 50\% confidence for all questions, the study should be expanded to approximately \textbf{180-200 questions}. This expansion would provide 80\% power with a safety margin, enabling robust statistical inference about model performance relative to baseline.
+
+The fact that only Claude shows statistical significance at the current sample size, while GPT and Gemini do not, illustrates the importance of adequate statistical power in evaluating LLM capabilities. Without sufficient power, we risk Type II errors (failing to detect real differences), which could lead to incorrect conclusions about model capabilities.
+
+\section{Technical Notes}
+
+\subsection{Power Calculation Method}
+
+Sample sizes were calculated using the formula for one-sample t-tests:
+\[n = \left(\frac{z_{\alpha/2} + z_{\beta}}{d}\right)^2\]
+
+where:
+\begin{itemize}
+    \item $z_{\alpha/2}$ is the critical value for a two-tailed test at significance level $\alpha = 0.05$
+    \item $z_{\beta}$ is the critical value corresponding to power $1-\beta$
+    \item $d$ is Cohen's effect size (standardized mean difference)
+\end{itemize}
+
+\subsection{Simulation Validation}
+
+Power estimates at the current sample size (N=50) were validated through Monte Carlo simulation with 10,000 iterations, confirming the analytical calculations.
+
+\subsection{Assumptions and Limitations}
+
+\begin{itemize}
+    \item Assumes normal distribution of differences
+    \item Uses observed standard deviations as population estimates
+    \item Does not account for potential correlation structure in questions
+    \item Safety margin of 50\% is conservative but recommended given uncertainty
+\end{itemize}
+
+\end{document}

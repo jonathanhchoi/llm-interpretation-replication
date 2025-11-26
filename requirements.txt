@@ -1,5 +1,5 @@
 # Core dependencies
-numpy>=1.21.0
+numpy>=1.21.0,<2.0.0  # NumPy 2.x has compatibility issues with some packages
 pandas>=1.3.0
 matplotlib>=3.4.0
 seaborn>=0.11.0
@@ -9,8 +9,12 @@ scipy>=1.7.0
 openai>=1.0.0
 anthropic>=0.20.0
 transformers>=4.30.0
-torch>=2.0.0
+torch>=2.1.0  # PyTorch 2.1+ required for some transformers features
 tiktoken>=0.5.0
+huggingface_hub>=0.16.0
+accelerate>=0.20.0
+bitsandbytes>=0.41.0  # For 8-bit model quantization
+sentence-transformers>=2.2.0  # For text embeddings (optional - script will work without it)
 
 # Statistical analysis
 scikit-learn>=1.0.0
@@ -21,6 +25,8 @@ tqdm>=4.60.0
 python-dotenv>=0.19.0
 requests>=2.25.0
 jsonlines>=3.0.0
+python-Levenshtein>=0.21.0  # For Levenshtein distance
+rank-bm25>=0.2.2  # For BM25 similarity
 
 # Jupyter support (optional, for notebooks)
 jupyter>=1.0.0

@@ -1,220 +1,262 @@
-# Large Language Models as Unreliable Judges - Replication Code
+# Off-the-Shelf Large Language Models Are Unreliable Judges
 
-This repository contains the replication code for the paper analyzing the reliability of Large Language Models (LLMs) as judges for legal interpretation tasks.
+Replication code and data for "Off-the-Shelf Large Language Models Are Unreliable Judges" by Jonathan H. Choi.
+
+**Paper:** Available at [SSRN link]
+**Preregistration:** [OSF](https://osf.io/25gya/)
+
+## Overview
+
+This repository contains code to replicate the empirical analyses in the paper, which tests the reliability of large language models (LLMs) as legal interpreters through:
+
+1. **Prompt Sensitivity Analysis** - Testing how LLM judgments vary with prompt phrasing
+2. **Ordinary Meaning Survey** - Comparing LLM judgments to human survey responses
+3. **Post-Training Effects** - Analyzing how instruction-tuning affects model alignment with human judgments
 
 ## Repository Structure
 
 ```
 llm_interpretation_replication/
-├── analysis/                 # Core analysis scripts
-│   ├── analyze_perturbation_results.py     # Analyze prompt perturbation experiments
-│   ├── analyze_results_base_versus_instruct.py  # Compare base vs instruction-tuned models
-│   ├── calculate_cohens_kappa.py           # Calculate inter-rater agreement
-│   ├── compare_base_vs_instruct.py         # Base vs instruct model comparisons
-│   ├── compare_instruct_models.py          # Compare different instruction-tuned models
-│   ├── config.py                            # Configuration settings
-│   ├── model_comparison_graph.py           # Generate model comparison visualizations
-│   └── perturb_prompts.py                  # Run prompt perturbation experiments
-├── survey_analysis/          # Human survey analysis
-│   ├── survey_analysis_consolidated.py     # Main survey analysis
-│   ├── analyze_base_vs_instruct_vs_human.py # Compare models with human judgments
-│   ├── analyze_llm_human_agreement.py      # LLM-human agreement analysis
-│   ├── analyze_llm_human_agreement_bootstrap.py # Bootstrap confidence intervals
-│   ├── analyze_llm_agreement_simple_bootstrap.py # Simple bootstrap analysis
-│   ├── analyze_model_family_differences.py # Analyze differences between model families
-│   ├── bootstrap_confidence_intervals.py   # Bootstrap CI calculations
-│   └── calculate_correlation_pvalues.py    # Statistical significance tests
-├── data/                     # Input data files
-│   ├── word_meaning_survey_results.csv     # Human survey responses
-│   ├── demographic_data.csv                # Survey participant demographics
-│   ├── model_comparison_results.csv        # Model comparison outputs
-│   └── instruct_model_comparison_results.csv # Instruction-tuned model results
-├── results/                  # Output directory for generated results
-└── requirements.txt          # Python dependencies
+├── analysis/                    # Core analysis scripts
+├── survey_analysis/             # Human survey analysis scripts
+├── data/                        # Input data files
+├── results/                     # Generated outputs (figures, tables)
+├── main.tex                     # Main paper LaTeX source
+├── main_online_appendix.tex     # Online appendix LaTeX source
+└── requirements.txt             # Python dependencies
 ```
+
+## Replication Guide by Paper Section
+
+### Section 3: LLM Judgments Are Sensitive to Prompts
+
+This section demonstrates that LLM legal interpretations are highly sensitive to prompt phrasing, output processing methods, and model choice.
+
+#### Section 3.3-3.5: Prompt Perturbation Analysis (GPT-4.1)
+
+**Scripts:**
+- `analysis/perturb_prompts.py` - Generate prompt perturbations and collect GPT responses
+- `analysis/analyze_perturbation_results.py` - Analyze relative probabilities and verbalized confidence
+
+**Outputs:**
+- Figure 1 (`combined_prompts_visualization.png`) - Distribution of relative probabilities
+- Figure 2 (`combined_confidence_visualization.png`) - Distribution of verbalized confidence scores
+- Table 1 & 2 in `main.tex`
+
+#### Section 3.6 & Appendix B: Robustness to Alternative Models
+
+Tests GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro on the same perturbations.
+
+**Scripts:**
+- `analysis/perturb_prompts_gpt.py` - GPT model perturbation analysis
+- `analysis/perturb_prompts_claude.py` - Claude model analysis
+- `analysis/perturb_prompts_claude_batch.py` - Claude batch processing
+- `analysis/perturb_prompts_gemini.py` - Gemini model analysis
+- `analysis/perturb_prompts_gemini_batch.py` - Gemini batch processing
+- `analysis/run_three_model_analysis.py` - Combined three-model analysis
+- `analysis/create_three_model_stacked_visualization.py` - Generate comparison figures
+
+**Outputs:**
+- Figure 5 (`three_model_stacked_visualization.png`) - Three-model comparison
+- Table in Appendix B (`main.tex` lines 539-574)
+
+#### Section 3.6 & Appendix C: Irrelevant Information Perturbations
+
+Tests whether inserting irrelevant factual statements affects model judgments.
+
+**Scripts:**
+- `analysis/perturb_with_irrelevant_statements.py` - Generate irrelevant statement perturbations
+- `analysis/evaluate_irrelevant_perturbations.py` - Evaluate model responses to irrelevant info
+
+**Data:**
+- `data/irrelevant_statements.txt` - List of 200 irrelevant factual statements
+- `data/perturbations_irrelevant.json` - Generated perturbations
+
+**Outputs:**
+- Figure 6 (`irrelevant_info_three_model_stacked_visualization.png`)
+- Table in Appendix C
+
+#### Appendix D: Normality Testing
+
+**Scripts:**
+- `analysis/analyze_perturbation_results.py` - Includes KS/AD tests and QQ plot generation
+
+**Outputs:**
+- Figures in Appendix D (`prompt_*_qq_plot.png`, `prompt_*_truncated_model.png`)
+
+---
+
+### Section 4: LLM Judgments Do Not Accurately Reflect Ordinary Meaning
+
+This section compares LLM judgments on ordinary meaning questions to human survey responses.
+
+#### Section 4.1-4.2: Survey Analysis and MAE Comparison
+
+**Scripts:**
+- `survey_analysis/survey_analysis_consolidated.py` - Main survey data processing
+- `analysis/evaluate_closed_source_models.py` - Evaluate GPT, Claude, Gemini on survey questions
+- `analysis/create_combined_visualization.py` - Generate error distribution figures
+
+**Data:**
+- `data/word_meaning_survey_results.csv` - Human survey responses (Part 1)
+- `data/word_meaning_survey_results_part_2.csv` - Human survey responses (Part 2)
+- `data/demographic_data.csv` - Survey participant demographics
+
+**Outputs:**
+- Figure 3 (`per_question_errors.png`) - Distribution of LLM errors vs human baseline
+- Tables 3-4 in `main.tex` (MAE comparisons)
+
+#### Section 4.3: Post-Training Effects on Ordinary Meaning
+
+Compares base models vs instruction-tuned versions (Falcon, StableLM, RedPajama).
+
+**Scripts:**
+- `analysis/analyze_results_base_versus_instruct.py` - Base vs instruct model comparison
+- `analysis/compare_base_vs_instruct.py` - Statistical analysis
+- `analysis/run_base_vs_instruct_100q.py` - Run comparison on 100 questions
+- `survey_analysis/analyze_base_vs_instruct_mae_100q.py` - MAE analysis
+
+**Outputs:**
+- Table 5 (`main.tex` lines 432-446) - MAE comparison base vs post-trained
+- Figure 7 (`prompt_rel_prob_differences.png`) - Probability differences
+- Figure 8 (`prompt_rel_prob_heatmap.png`) - Heatmap of changes
+
+---
+
+### Online Appendix
+
+#### Section 1: Prompt Perturbation Examples
+
+The detailed perturbation tables in the Online Appendix are generated from:
+- `data/perturbations.json` - All 10,000 prompt perturbations
+
+#### Section 2: Inter-Model Sensitivity (8 Open-Source Models)
+
+**Scripts:**
+- `analysis/compare_instruct_models.py` - Compare multiple open-source models
+- `analysis/compare_instruct_models_survey2.py` - Extended model comparison
+- `analysis/model_comparison_graph.py` - Generate correlation matrices
+
+**Outputs:**
+- Correlation matrices and distribution plots in Online Appendix Section 2
+
+#### Section 5: Mixture-of-Experts and Speculative Decoding
+
+Analysis of how architectural choices affect consistency (discussed in Online Appendix).
+
+#### Section 6: Power Analysis
+
+**Scripts:**
+- `analysis/power_analysis.py` - Statistical power calculations for survey design
+
+**Outputs:**
+- `analysis/power_analysis_report.tex` - Power analysis results
+
+---
 
 ## Setup
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- pip package manager
+- Python 3.8+
+- API keys for OpenAI, Anthropic, and Google (for model evaluation)
 
 ### Installation
 
-1. Clone this repository:
 ```bash
-git clone [repository-url]
-cd llm_interpretation_replication
-```
-
-2. Install required dependencies:
-```bash
+git clone https://github.com/jonathanhchoi/llm-interpretation-replication.git
+cd llm-interpretation-replication
 pip install -r requirements.txt
 ```
 
-3. Set up API keys (required for running model experiments):
+### API Keys
 
-   **Method 1: Using .env file (Recommended)**
+Copy `.env.example` to `.env` and add your API keys:
+
+```bash
+cp .env.example .env
+# Edit .env with your actual API keys
+```
+
+Required keys:
+- `OPENAI_API_KEY` - For GPT models
+- `ANTHROPIC_API_KEY` - For Claude models
+- `GEMINI_API_KEY` - For Gemini models
+- `HUGGINGFACE_TOKEN` - For open-source model access
+
+## Running the Analysis
+
+### Quick Start: Reproduce Main Figures
+
+```bash
+# Prompt sensitivity analysis (Section 3)
+python analysis/run_three_model_analysis.py
+
+# Survey comparison (Section 4)
+python analysis/evaluate_closed_source_models.py
+
+# Base vs instruct comparison (Section 4.3)
+python analysis/run_base_vs_instruct_100q.py
+```
+
+### Full Replication
+
+1. **Generate prompt perturbations** (requires Claude API):
    ```bash
-   # Copy the example environment file
-   cp .env.example .env
-   
-   # Edit .env and add your actual API keys
-   nano .env  # or use your preferred editor
+   python analysis/perturb_prompts.py
    ```
 
-   **Method 2: Export as environment variables**
+2. **Evaluate perturbations on multiple models**:
    ```bash
-   export OPENAI_API_KEY="your-openai-api-key"
-   export ANTHROPIC_API_KEY="your-anthropic-api-key"
+   python analysis/perturb_prompts_gpt.py
+   python analysis/perturb_prompts_claude_batch.py
+   python analysis/perturb_prompts_gemini_batch.py
    ```
 
-   **Important:** Never commit your `.env` file with actual API keys to version control!
+3. **Run survey analysis**:
+   ```bash
+   python survey_analysis/survey_analysis_consolidated.py
+   python analysis/evaluate_closed_source_models.py
+   ```
 
-## Replication Instructions
-
-### 1. Prompt Perturbation Analysis
-
-To replicate the prompt sensitivity experiments:
-
-```bash
-# Run perturbation experiments (requires API access)
-python analysis/perturb_prompts.py
-
-# Analyze perturbation results
-python analysis/analyze_perturbation_results.py
-```
-
-This will generate:
-- Distribution plots of relative probabilities across prompts
-- Statistical tests for normality
-- Confidence interval visualizations
-
-### 2. Model Comparison Analysis
-
-To compare base vs instruction-tuned models:
-
-```bash
-# Run model comparisons
-python analysis/compare_base_vs_instruct.py
-
-# Analyze results
-python analysis/analyze_results_base_versus_instruct.py
-
-# Generate comparison graphs
-python analysis/model_comparison_graph.py
-```
-
-Output includes:
-- Correlation matrices between models
-- Distribution of probability differences
-- Visualization of model agreement/disagreement
-
-### 3. Inter-Model Agreement (Cohen's Kappa)
-
-```bash
-python analysis/calculate_cohens_kappa.py
-```
-
-This calculates:
-- Pairwise Cohen's kappa coefficients
-- Overall inter-rater reliability metrics
-- Agreement matrices
-
-### 4. Human Survey Analysis
-
-To replicate the human survey comparison:
-
-```bash
-# Main survey analysis
-python survey_analysis/survey_analysis_consolidated.py
-
-# Compare with LLM results
-python survey_analysis/analyze_base_vs_instruct_vs_human.py
-
-# Calculate LLM-human agreement
-python survey_analysis/analyze_llm_human_agreement.py
-
-# Bootstrap confidence intervals
-python survey_analysis/analyze_llm_human_agreement_bootstrap.py
-
-# Model family differences
-python survey_analysis/analyze_model_family_differences.py
-```
-
-Results include:
-- Human-LLM correlation coefficients
-- Bootstrap confidence intervals
-- Statistical significance tests
-- Model family clustering analysis
-
-### 5. Statistical Significance Testing
-
-```bash
-# Calculate p-values for correlations
-python survey_analysis/calculate_correlation_pvalues.py
-
-# Bootstrap confidence intervals
-python survey_analysis/bootstrap_confidence_intervals.py
-```
+4. **Generate visualizations**:
+   ```bash
+   python analysis/create_three_model_stacked_visualization.py
+   python analysis/create_combined_visualization.py
+   ```
 
 ## Data Files
 
-### Input Data
-
-- `word_meaning_survey_results.csv`: Human survey responses for word meaning judgments
-- `demographic_data.csv`: Demographic information of survey participants
-- `model_comparison_results.csv`: Pre-computed model outputs (if not regenerating)
-- `instruct_model_comparison_results.csv`: Instruction-tuned model outputs
-
-### Output Files
-
-All generated results will be saved in the `results/` directory, including:
-- Visualization plots (PNG/PDF)
-- Statistical analysis results (JSON/CSV)
-- Correlation matrices
-- Bootstrap confidence intervals
-
-## Key Findings Replicated
-
-1. **Prompt Sensitivity**: LLMs show high sensitivity to minor prompt variations
-2. **Inter-Model Disagreement**: Low correlation between different model families
-3. **Instruction Tuning Effects**: Significant differences between base and instruction-tuned models
-4. **Human-LLM Divergence**: Weak correlation between human judgments and LLM outputs
+| File | Description |
+|------|-------------|
+| `data/word_meaning_survey_results.csv` | Human survey responses (N=1003) |
+| `data/demographic_data.csv` | Survey participant demographics |
+| `data/perturbations.json` | 10,000 prompt perturbations (5 scenarios x 2000 each) |
+| `data/model_comparison_results.csv` | Model evaluation results |
+| `data/irrelevant_statements.txt` | 200 irrelevant factual statements for robustness tests |
 
 ## Configuration
 
 Edit `analysis/config.py` to modify:
-- Model selection
-- API endpoints
+- Model selection and API endpoints
 - Number of bootstrap iterations
-- Statistical significance thresholds
 - Output directory paths
-
-## Troubleshooting
-
-1. **API Rate Limits**: If encountering rate limits, add delays in `perturb_prompts.py`
-2. **Memory Issues**: For large-scale bootstrap, reduce `n_bootstrap` in configuration
-3. **Missing Data**: Ensure all CSV files are in the `data/` directory
+- Statistical significance thresholds
 
 ## Citation
 
-If you use this code, please cite:
-
 ```bibtex
 @article{choi2025llm,
-  title={Large Language Models as Unreliable Judges},
+  title={Off-the-Shelf Large Language Models Are Unreliable Judges},
   author={Choi, Jonathan H.},
-  journal={[Journal Name]},
   year={2025}
 }
 ```
 
 ## License
 
-This code is released under the MIT License. See LICENSE file for details.
+MIT License. See `LICENSE` for details.
 
 ## Contact
 
-For questions or issues with the replication code, please open an issue on GitHub or contact [contact information].
+For questions about the replication code, please open an issue on GitHub.

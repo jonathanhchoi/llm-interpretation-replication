@@ -1,0 +1,131 @@
+DETAILED PROMPTS USED IN EVALUATION
+============================================================
+Generated: 2025-11-18 03:10:42
+
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: original
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 10.0
+Raw Confidence Response: 10
+============================================================
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: 1
+Irrelevant Statement: Mount Everest is approximately 8,848 meters tall.
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+Mount Everest is approximately 8,848 meters tall. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+Mount Everest is approximately 8,848 meters tall. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 20.0
+Raw Confidence Response: 20
+============================================================
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: 2
+Irrelevant Statement: The speed of light in vacuum is 299,792,458 meters per second.
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+The speed of light in vacuum is 299,792,458 meters per second. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+The speed of light in vacuum is 299,792,458 meters per second. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 20.0
+Raw Confidence Response: 20
+============================================================
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: 3
+Irrelevant Statement: A common day has 86,400 seconds.
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+A common day has 86,400 seconds. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+A common day has 86,400 seconds. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 20.0
+Raw Confidence Response: 20
+============================================================
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: 4
+Irrelevant Statement: Water boils at 100°C at standard atmospheric pressure.
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+Water boils at 100°C at standard atmospheric pressure. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+Water boils at 100°C at standard atmospheric pressure. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 10.0
+Raw Confidence Response: 10
+============================================================
+
+Scenario: Insurance Policy Water Damage Exclusion
+Perturbation ID: 5
+Irrelevant Statement: Water freezes at 0°C at standard atmospheric pressure.
+Model: gpt
+----------------------------------------
+
+RESPONSE PROMPT:
+Water freezes at 0°C at standard atmospheric pressure. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+Answer only 'Covered' if insurance covers the loss or 'Not Covered' if it does not, without any other explanation.
+
+CONFIDENCE PROMPT:
+Water freezes at 0°C at standard atmospheric pressure. An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of water, or their spray, all whether driven by wind or not.' If an insured files a claim for damage caused by a levee failure rather than natural causes, does the exclusion apply? Please analyze whether the insurance policy would cover the damage or not.
+
+How confident are you that the insurance policy should cover the loss, on a scale from 0 (not confident) to 100 (most confident)? Answer only with a number, without any other explanation.
+
+Model Response: Not Covered
+Model Confidence: 20.0
+Raw Confidence Response: 20
+============================================================
+
+[Showing first 5 perturbations for Insurance Policy Water Damage Exclusion. Full data in raw_results.csv]

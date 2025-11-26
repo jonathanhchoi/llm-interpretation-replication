@@ -1,0 +1,68 @@
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Model} & \textbf{MAE} & \textbf{95\% CI} \\
+\hline
+Random (Always 50%) & 0.175 & [0.154, 0.195] \\
+Equanimity (Human Normal) & 0.172 & [0.147, 0.198] \\
+\hline
+GPT-4.1 & 0.197 & [0.171, 0.224] \\
+Claude Opus 4.1 & 0.229 & [0.201, 0.258] \\
+Gemini-2.0-flash & 0.241 & [0.216, 0.268] \\
+\hline
+\end{tabular}
+\caption{Mean Absolute Error (MAE) of Models and Baselines. Lower MAE values indicate better alignment with human judgments.}
+\label{tab:mae_results}
+\end{table}
+\FloatBarrier
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} & \textbf{p-value} \\
+ & \textbf{from Random} & & \\
+\hline
+GPT-4.1 & +0.022 & [-0.013, +0.061] & 0.242 \\
+Claude Opus 4.1 & +0.054 & [+0.013, +0.096] & 0.010 \\
+Gemini-2.0-flash & +0.067 & [+0.026, +0.108] & 0.001 \\
+\hline
+\end{tabular}
+\caption{MAE difference between each model and Random baseline (always predicting 50\%). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
+\label{tab:mae_vs_random}
+\end{table}
+\FloatBarrier
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} & \textbf{p-value} \\
+ & \textbf{from Equanimity} & & \\
+\hline
+GPT-4.1 & +0.027 & [-0.008, +0.064] & 0.134 \\
+Claude Opus 4.1 & +0.059 & [+0.020, +0.098] & 0.002 \\
+Gemini-2.0-flash & +0.072 & [+0.035, +0.109] & < 0.001 \\
+\hline
+\end{tabular}
+\caption{MAE difference between each model and Equanimity baseline (normal distribution with human mean and std). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
+\label{tab:mae_vs_equanimity}
+\end{table}
+\FloatBarrier
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{MAE} & \textbf{MAE SD} & \textbf{Correlation} & \textbf{p-value} \\
+\hline
+GPT-4.1 & 0.197 & 0.133 & 0.665 & < 0.001 \\
+Claude Opus 4.1 & 0.229 & 0.145 & 0.530 & < 0.001 \\
+Gemini-2.0-flash & 0.241 & 0.135 & 0.591 & < 0.001 \\
+\hline
+\end{tabular}
+\caption{Summary statistics for model performance. Correlation measures Pearson correlation between model predictions and human assessments. P-value tests significance of correlation.}
+\label{tab:summary_stats}
+\end{table}
+\FloatBarrier

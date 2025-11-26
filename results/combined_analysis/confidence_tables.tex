@@ -1,0 +1,57 @@
+% Table 1: Summary Statistics for Verbalized Confidence Scores
+\begin{table}[htbp]
+\centering
+\caption{Summary Statistics for Verbalized Confidence Scores Across Models}
+\label{tab:summary_stats}
+\begin{tabular}{lccccccc}
+\toprule
+Model & N & Mean & Std Dev & Median & Q1 & Q3 & 95\% CI \\
+\midrule
+GPT-4.1 & 19535 & 36.5 & 21.4 & 30.0 & 20.0 & 40.0 & [36.2, 36.8] \\
+Claude Opus 4 & 9587 & 49.2 & 30.7 & 65.0 & 20.0 & 75.0 & [48.5, 49.8] \\
+Gemini 2.0 & 9822 & 53.1 & 31.1 & 50.0 & 30.0 & 85.0 & [52.5, 53.7] \\
+\midrule
+Overall (All Models) & 38944 & 43.8 & 27.6 & 30.0 & 20.0 & 70.0 & [43.5, 44.1] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Table 2: Distribution of Confidence Levels
+\begin{table}[htbp]
+\centering
+\caption{Distribution of Verbalized Confidence Levels (\%)}
+\label{tab:confidence_distribution}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Low (0-33) & Medium (34-66) & High (67-100) & At 0 & At 50 & At 100 \\
+\midrule
+GPT-4.1 & 60.4 & 26.4 & 13.2 & 2.4 & 7.4 & 0.4 \\
+Claude Opus 4 & 47.4 & 4.4 & 48.2 & 3.7 & 1.1 & 0.7 \\
+Gemini 2.0 & 36.7 & 29.3 & 34.0 & 0.6 & 0.7 & 9.7 \\
+\midrule
+Overall (All Models) & 51.2 & 21.7 & 27.1 & 2.3 & 4.1 & 2.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Table 3: Per-Prompt Confidence Comparison
+\begin{table}[htbp]
+\centering
+\caption{Mean Confidence Scores by Original Prompt}
+\label{tab:per_prompt}
+\begin{tabular}{p{5cm}cccc}
+\toprule
+Prompt & GPT-4 & Claude & Gemini & Cross-Model Std \\
+\midrule
+An insurance policy contains the following exclusi... & nan & 31.7 & 49.6 & 21.1 \\
+\addlinespace
+In a prenuptial agreement, if one party files a pe... & nan & 51.9 & 41.8 & 24.2 \\
+\addlinespace
+Does the following contract term from 1961 natural... & nan & 25.2 & 39.4 & 10.3 \\
+\addlinespace
+A contractor and business corresponded about const... & nan & 70.5 & 44.0 & 20.3 \\
+\addlinespace
+You are analyzing an insurance policy dispute. The... & nan & 63.7 & 91.3 & 26.7 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,574 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{multirow}
+
+\title[LLMs Are Unreliable]{Off-the-Shelf Large Language Models Are Unreliable Judges}
+\author{Jonathan H. Choi}
+\institute{WashU Law}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\begin{columns}
+\column{0.5\textwidth}
+\titlepage
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{robot_judge.png}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Key Findings}
+
+\begin{itemize}
+    \item Can large language models (LLMs) serve as ``AI judges" that interpret legal cases?
+    
+    \item 3 main problems:
+    \begin{enumerate}
+        \item \textbf{Prompt sensitivity}: LLM judgments vary dramatically with minor changes in prompt phrasing
+        \item \textbf{Output processing variation}: Results differ depending on how model outputs are processed
+        \item \textbf{Model inconsistency}: Substantial disagreement between different LLMs
+        \item \textbf{Post-training effects}: Post-training causes LLMs to deviate from ordinary meaning
+    \end{enumerate}
+\end{itemize}
+\end{frame}
+
+\section{AI Judges in Practice}
+
+\begin{frame}{Judges Using ChatGPT Worldwide}
+\begin{itemize}
+    \item \textbf{Brazil:} Administrative and tax courts systematically use ChatGPT to draft rulings
+    \item \textbf{Colombia:} Appellate court cited ChatGPT in a decision about medical insurance coverage
+    \item \textbf{India:} High Court consulted ChatGPT on bail jurisprudence for assault cases
+    \item \textbf{Mexico:} Chief Justice of electoral court criticized lower court for \textit{not} using ChatGPT
+    \item \textbf{United States:} Eleventh Circuit used ChatGPT obiter to determine if in-ground trampoline counts as ``landscaping''
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Judge Padilla García (Colombia)}
+\begin{center}
+\includegraphics[width=0.5\textwidth]{padilla.jpg}
+\vspace{0.5cm}
+\par\vfill
+\includegraphics[width=1.0\textwidth]{padilla_question.jpg}
+\end{center}
+\end{frame}
+
+\begin{frame}{Judge Newsom (United States)}
+\begin{center}
+\includegraphics[width=0.5\textwidth]{newsom.jpg}
+\vspace{0.5cm}
+\par\vfill
+\includegraphics[width=1.0\textwidth]{newsom_question.jpg}
+\end{center}
+\end{frame}
+
+\begin{frame}{Scholarly Literature}
+\begin{columns}
+\column{0.33\textwidth}
+\includegraphics[width=\textwidth]{arbel_hoffman.jpg}
+\column{0.33\textwidth}
+\includegraphics[width=\textwidth]{engel_mcadams.jpg}
+\column{0.33\textwidth}
+\includegraphics[width=\textwidth]{volokh_chief_justice_robots.jpg}
+\end{columns}
+\end{frame}
+
+\section{LLM Background}
+
+\begin{frame}<presentation:0>{How LLMs Work}
+\begin{center}
+\includegraphics[width=0.8\textwidth]{pre_train_post_train.jpg}
+\end{center}
+\begin{itemize}
+    \item \textbf{Pre-training}: Model learns to predict next word over huge corpus
+
+    \item \textbf{Post-training}: Fine-tune model to satisfy human preferences
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}<presentation:0>{Why Use LLMs for Legal Interpretation?}
+\begin{itemize}
+    \item \textbf{Simple:} Easy to use
+    \item \textbf{Context-aware:} Can process surrounding text better than dictionaries
+    \item \textbf{Quantifiable:} Provides confidence scores and probabilities
+    \item \textbf{Ordinary meaning(?):} Pre-trained on real-world language use
+    \item \textbf{Objective-seeming(?):} Fewer apparent methodological choices than alternatives
+\end{itemize}
+\end{frame}
+
+
+
+\section{Experimental Findings}
+
+\begin{frame}<presentation:0>{The Wrong Way to Test LLM Reliability}
+\begin{columns}
+\column{0.6\textwidth}
+\includegraphics[width=\textwidth]{temperature_sampling.jpg}
+\column{0.4\textwidth}
+\onslide<2->{\includegraphics[width=\textwidth]{skeptical_monocle.png}}
+\end{columns}
+\end{frame}
+
+\begin{frame}<presentation:0>{The Wrong Way to Test LLM Reliability}
+\begin{itemize}
+\item Where does variation in ChatGPT/Claude come from? 
+\item \textbf{Temperature:}
+\begin{equation}
+p(x_i) = \frac{\exp(z_i/T)}{\sum_j \exp(z_j/T)}
+\end{equation}
+\item Higher T = more randomness, lower T = more deterministic
+\item At T = 0, model always gives identical answers
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}<presentation:0>{The Wrong Way to Test LLM Reliability}
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{nyt_needle.png}
+\end{center}
+\end{frame}
+
+\begin{frame}<presentation:0>{The Wrong Way to Test LLM Reliability}
+    \begin{itemize}
+        \item Proponents have tested LLM reliability by repeatedly asking an LLM the same question
+        \item Where does variation in ChatGPT/Claude come from? 
+        \item \textbf{Temperature:}
+        \begin{equation}
+        p(x_i) = \frac{\exp(z_i/T)}{\sum_j \exp(z_j/T)}
+        \end{equation}
+        \item Higher T = more randomness, lower T = more deterministic
+        \item At T = 0, model always gives identical answers
+        \item \textbf{Variation from temperature is artificial}, not true sensitivity; only reflects model's best guess about a single prompt
+    \end{itemize}
+    \end{frame}
+
+\begin{frame}{Key Question for Reliability}
+
+\Large How much do LLM outputs vary given a realistic range of inputs?
+    
+\end{frame}
+
+\begin{frame}{Experiment 1: Prompt Sensitivity}
+\begin{itemize}
+    \item \textbf{How sensitive are LLM judgments to prompts?}
+    \item 5 legal questions, generated 2000 variations each using Claude Opus 4.1
+    \item Inputted variations to GPT-4.1, GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro
+    \item Measured both \hyperlink{slide:relative-probability}{next-token probabilities} and \hyperlink{slide:weighted-confidence}{verbalized confidence estimates}
+    \item Temperature set to 0 (or deterministic sampling) to eliminate artificial randomness
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}{Prompt Variation Examples}
+\begin{itemize}
+    \item \textbf{Example 1:} \\
+    How broadly should ``other affiliate[s]'' be interpreted in a 1961 contract clause requiring [Company] and such affiliates to split royalties equally after third-party deductions in foreign markets---does this encompass only affiliates existing at contract formation or does it include affiliates established subsequently?
+    \begin{itemize}
+        \item \textbf{Relative Probability:} 14.8\% for 'Existing Affiliates'
+    \end{itemize}
+    \vspace{0.5cm}
+    \item \textbf{Example 2:} \\
+    How broadly should ``other affiliate[s]'' be interpreted in a 1961 contractual provision requiring [Company] and its affiliates to split royalties 50/50 after deducting foreign market third-party fees---does this extend beyond affiliates existing at contract signing to include future affiliates?
+    \begin{itemize}
+        \item \textbf{Relative Probability:} 73.1\% for 'Existing Affiliates'
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Results - Relative Probabilities}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{combined_prompts_visualization.png}
+\end{center}
+\end{frame}
+
+\begin{frame}{Results - Confidence Estimates}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{combined_confidence_visualization.png}
+\end{center}
+\end{frame}
+
+
+
+\begin{frame}{Experiment 2: LLM Accuracy on Ordinary Meaning}
+\begin{itemize}
+    \item \textbf{Can LLMs accurately assess ordinary meaning?}
+    \item Survey: 1003 participants via Prolific (879 after exclusions)
+    \begin{itemize}
+        \item Demographically representative sample of U.S. adults
+        \item 100 questions about ordinary linguistic meaning
+        \item 0-100 slider scale (0 = ``No, definitely not'', 100 = ``Yes, definitely'')
+    \end{itemize}
+    \item Example questions:
+    \begin{itemize}
+        \item Is a ``screenshot'' a ``photograph''?
+        \item Is ``whistling'' a form of ``music''?
+        \item Is a ``trail'' a ``road''?
+    \end{itemize}
+    \item Compared average human responses with GPT-4.1, Claude Opus 4.1, and Gemini 2.5 Pro
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Results: LLM Performance vs. Baselines}
+\begin{itemize}
+    \item Treated average human response as ground truth
+    \item Measured Mean Absolute Error (MAE) for each model:
+    \begin{equation}
+    \text{MAE} = \frac{1}{n}\sum_{i=1}^{n}\left|y_i - \hat{y}_i\right|
+    \end{equation}
+    where $y_i$ = average human response, $\hat{y}_i$ = model response
+    \item Compared against two baselines:
+    \begin{itemize}
+        \item \textbf{Equanimity:} Always answer 50\%
+        \item \textbf{Random:} Draw from normal distribution matching human response distribution
+    \end{itemize}
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Model/Baseline} & \textbf{MAE} & \textbf{95\% CI} \\
+\hline
+Equanimity & 0.175 & [0.154, 0.196] \\
+Random & 0.172 & [0.147, 0.198] \\
+\hline
+GPT-4.1 & 0.197 & [0.171, 0.224] \\
+Claude Opus 4.1 & 0.229 & [0.201, 0.258]\\
+Gemini 2.5 Pro & 0.241& [0.216, 0.268]\\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+
+
+
+\begin{frame}{Experiment 3: Post-Training Effects}
+\begin{itemize}
+    \item \textbf{Does post-training change how models evaluate interpretive questions?}
+    \item Compared 3 base models with instruction-tuned counterparts
+    \item Same 100 questions about ordinary linguistic meaning
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Post-Training Effects Results}
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+\textbf{Model Family} & \textbf{Correlation} & \textbf{p-value} \\
+\hline
+Falcon & 0.617 & 0.000 \\
+RedPajama & 0.497 & 0.000 \\
+StableLM & 0.258 & 0.073 \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{Post-Training Probability Differences}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{prompt_rel_prob_differences.png}
+\end{center}
+\end{frame}
+
+\begin{frame}{Comparison with Human Evaluations}
+\begin{itemize}
+    \item \textbf{Question:} Does post-training improve or worsen alignment with human judgments?
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\hline
+\textbf{Model} & \textbf{Base MAE} & \textbf{Post-trained MAE} & \textbf{Difference} \\
+\hline
+Falcon & 0.333 & 0.468 & +0.135*** \\
+RedPajama & 0.313 & 0.437 & +0.122* \\
+StableLM & 0.369 & 0.341 & -0.030 \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.2cm}
+\textbf{Finding:} Post-training generally worsens alignment with human judgments
+\end{frame}
+
+\section{Recommendations}
+
+\begin{frame}{Alternative Approaches}
+\begin{enumerate}
+    \item Post-Training for Legal Interpretation (e.g., fine-tuning on real judgments)
+    \item Ensemble Methods
+    \item Structured Elicitation
+    \item Hybrid Human-AI Approaches
+\end{enumerate}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Conclusion}
+\begin{itemize}
+    \item Current LLMs are \textbf{not sufficiently reliable} to serve as independent AI judges
+    \item Two main problems:
+    \begin{enumerate}
+        \item \textbf{Precision}: Sensitivity to prompts, output processing, choice of model
+        \item \textbf{Accuracy}: Deviations from ordinary meaning
+    \end{enumerate}
+    \item LLMs may still have value as research tools with human oversight
+    \item Alternative methods could improve reliability
+\end{itemize}
+\end{frame}
+
+\section{Appendix}
+
+\begin{frame}{Thank You}
+\begin{center}
+\Huge{Questions / Comments?}
+
+\vspace{1cm}
+\normalsize{Contact: jonchoi@usc.edu}
+\end{center}
+\end{frame}
+
+\begin{frame}{Relative Probability Method}
+\label{slide:relative-probability}
+\begin{itemize}
+    \item \textbf{Method:} Phrases prompts as binary questions and calculates the probability of the first answer option
+    \item \textbf{Formula:} Given log probabilities $\log p_1$ and $\log p_2$ for two answer options:
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{equation}
+\boxed{p_{r} = \frac{p_1}{p_1 + p_2}}
+\end{equation}
+
+\vspace{0.5cm}
+
+\begin{itemize}
+    \item Where $p_1 = \exp(\log p_1)$ and $p_2 = \exp(\log p_2)$
+    \item Normalized measure ranges from 0 to 1
+    \item Values > 0.5 favor the first answer option
+    \item Values < 0.5 favor the second answer option
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Weighted Confidence Method}
+\label{slide:weighted-confidence}
+\begin{itemize}
+    \item \textbf{Method:} Asks model to verbalize confidence on a 0-100 scale
+    \item \textbf{Formula:} Calculates expected value of confidence:
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{equation}
+\boxed{c(p) = \mathbb{E}[v|p] = \sum_{v \in \mathcal{V}} v \cdot P(v|p)}
+\end{equation}
+
+\vspace{0.3cm}
+
+\begin{itemize}
+    \item Where $\mathcal{V} = \{0, 1, 2, \ldots, 100\}$ is the set of possible confidence values
+    \item In practice, approximated using top-$k$ most probable values:
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{equation}
+c(p) \approx \sum_{i=1}^{k} r_i \cdot p_i
+\end{equation}
+
+\vspace{0.2cm}
+
+\begin{itemize}
+    \item $r_i$ = $i$-th most probable confidence value
+    \item $p_i$ = its corresponding probability
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}{LLMs Perform Worse Than Simple Baselines}
+\begin{center}
+\small
+\begin{tabular}{llcc}
+\hline
+\textbf{Baseline} & \textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} \\
+\hline
+\multirow{3}{*}{Equanimity}& GPT-4.1 & +0.022 & [-0.013, +0.061]\\
+ & Claude Opus 4.1 & +0.054** & [+0.013, +0.096] \\
+ & Gemini 2.5 Pro & +0.067***& [+0.026, +0.108]\\
+\hline
+\multirow{3}{*}{Random}& GPT-4.1 & +0.027 & [-0.008, +0.064] \\
+ & Claude Opus 4.1 & +0.059*** & [+0.020, +0.098] \\
+ & Gemini 2.5 Pro & +0.072***& [+0.035, +0.109]\\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+
+\begin{itemize}
+    \item \textbf{Key Finding:} All frontier LLMs perform worse than simple baselines
+    \item Claude Opus 4.1 and Gemini 2.5 Pro are \textbf{statistically significantly worse} than both baselines
+    \item GPT-4.1 is worse but not statistically significantly so
+    \item LLMs do not accurately reflect ordinary meaning
+\end{itemize}
+
+\vspace{0.2cm}
+\small{Significance: $*** p < 0.01, ** p < 0.05, * p < 0.1$}
+\end{frame}
+
+
+
+\begin{frame}{Humans vs. LLMs: Survey Experiment}
+\begin{itemize}
+    \item \textbf{Survey:} 1003 participants via Prolific (879 after exclusions), representative sample of U.S. adults
+    \item Same 100 questions as LLM analysis, split into 10 groups of 10
+    \item 0-100 slider scale, analogous to LLM probabilities
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tabular}{lc}
+\hline
+\textbf{Rater Type} & \textbf{Cross-Prompt Correlation} \\
+\hline
+Humans & 0.285 \\
+& [0.238, 0.314] \\
+\hline
+LLMs & 0.052 \\
+& [-0.003, 0.155] \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+
+\begin{itemize}
+    \item Humans show \textbf{5.5x higher} cross-prompt correlation than LLMs
+    \item Difference: 0.212 [0.126, 0.292]
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}{Normality Tests}
+\begin{itemize}
+    \item \textbf{Does the same model give different answers before and after post-training?}
+    \item Compared distribution of results against normal distribution and normal distribution accounting for truncation at 0 and 1
+    \item \textbf{Distributions are non-normal} ($p = 0.000$ in all cases) under Kolmogorov-Smirnov and Anderson-Darling tests, whether accounting for truncation or not
+    \item Distributions exhibit \textbf{skewness and bimodality} (bimodality suggests model overconfidence)    
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Model Correlation Distribution}
+\begin{center}
+\includegraphics[width=0.8\textwidth]{model_pearson_correlation_distribution.png}
+\end{center}
+\end{frame}
+
+\begin{frame}{Model Correlation Matrix}
+\begin{center}
+\includegraphics[width=0.8\textwidth]{model_pearson_correlation_matrix.png}
+\end{center}
+\begin{itemize}
+    \item Visualizes specific relationships between model pairs
+    \item Few strong positive correlations
+    \item Some model pairs even show negative correlations
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Practical Recommendations for Direct Queries}
+\begin{enumerate}
+    \item Extract and analyze model log probabilities directly
+    \item Systematically vary prompt phrasings to assess stability
+    \item Consult multiple different models to check for consensus
+    \item Use pre-trained LLMs if you care about ordinary meaning
+    \item Be transparent about model version, prompting technique, and methodology
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Cohen's Kappa: Technical Definition}
+    \begin{itemize}
+        \item \textbf{Definition:} Measures inter-rater agreement for categorical variables
+        \begin{equation}
+        \kappa = \frac{p_o - p_e}{1 - p_e}
+        \end{equation}
+        \item Where:
+        \begin{itemize}
+            \item $p_o$ = observed agreement proportion
+            \item $p_e$ = expected agreement by chance
+        \end{itemize}
+        \item \textbf{Interpretation:}
+        \begin{itemize}
+            \item $\kappa = 1$: Perfect agreement
+            \item $\kappa = 0$: Agreement equivalent to chance
+            \item $\kappa < 0$: Agreement worse than chance
+        \end{itemize}
+    \end{itemize}
+    \end{frame}
+
+
+
+
+
+\begin{frame}{The Wrong Way to Test LLM Reliability}
+\begin{columns}
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{pollster_different.png}
+\onslide<2->{\begin{center}\includegraphics[width=0.2\textwidth]{tick.png}\end{center}}
+\column{0.5\textwidth}
+\includegraphics[width=\textwidth]{pollster_identical.png}
+\onslide<2->{\begin{center}\includegraphics[width=0.2\textwidth]{x_mark.png}\end{center}}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Next Steps}
+\begin{itemize}
+    \item Add more models?
+    \item Use ablation to see what drives outputs?
+    \item Anything else?
+    
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Post-Training Effects Heatmap}
+\begin{center}
+\includegraphics[width=0.7\textwidth]{prompt_rel_prob_heatmap.png}
+\end{center}
+\begin{itemize}
+    \item Some questions show consistent shifts across model families
+    \item Many questions show model-specific effects
+    \item Impact of post-training depends on both question and model
+\end{itemize}
+\end{frame}
+
+
+\end{document} 
+

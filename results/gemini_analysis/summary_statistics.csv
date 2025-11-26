@@ -1,0 +1,6 @@
+Prompt Number,First Token,Second Token,Mean Confidence,Std Dev,Min,Max,2.5th Percentile,97.5th Percentile,95% Interval Width,Sample Size,Favors First Token (>50),Favors Second Token (<50),Neutral (=50)
+1,Covered,Not,49.9625,25.6941859054671,0,100,5.0,95.0,90.0,2000,1097,887,16
+2,Ultimate,First,41.6905,35.98255246353286,0,100,5.0,100.0,95.0,2000,705,1291,4
+3,Existing,Future,39.380904522613065,13.654452739815808,1,85,20.0,65.0,45.0,1990,453,1525,12
+4,Monthly,Payment,44.0275,22.45849362085212,0,95,10.0,90.0,80.0,2000,832,1144,24
+5,Covered,Not,91.3855,18.129733405835854,0,100,19.875000000000007,100.0,80.125,2000,1909,81,10

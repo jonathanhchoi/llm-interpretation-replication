@@ -1,0 +1,200 @@
+Mount Everest is approximately 8,848 meters tall.
+The speed of light in vacuum is 299,792,458 meters per second.
+A common day has 86,400 seconds.
+Water boils at 100°C at standard atmospheric pressure.
+Water freezes at 0°C at standard atmospheric pressure.
+The chemical symbol for gold is Au.
+The chemical symbol for iron is Fe.
+The chemical symbol for sodium is Na.
+The chemical symbol for potassium is K.
+The chemical symbol for silver is Ag.
+The Pacific Ocean is the largest ocean on Earth.
+Africa is the second largest continent by area.
+Lake Baikal is the deepest freshwater lake by maximum depth.
+The Sahara is the largest hot desert on Earth.
+Antarctica is the coldest continent.
+Russia is the largest country by land area.
+Vatican City is the smallest country by area.
+The Amazon River has the greatest discharge of any river.
+The Dead Sea’s shoreline is the lowest land elevation on Earth.
+The Great Barrier Reef is the largest coral reef system.
+The human heart has four chambers.
+The adult human skeleton typically has 206 bones.
+DNA is structured as a double helix.
+Humans have 23 pairs of chromosomes.
+The cerebrum is divided into two hemispheres.
+A leap year has 366 days.
+There are 12 months in a year.
+A week has seven days.
+One hour equals 60 minutes.
+One minute equals 60 seconds.
+One kilometer equals 1,000 meters.
+One meter equals 100 centimeters.
+One inch equals exactly 2.54 centimeters.
+One mile equals approximately 1.609 kilometers.
+One nautical mile equals 1,852 meters.
+A byte consists of 8 bits.
+The binary number system uses base 2.
+The decimal number system uses base 10.
+The Moon orbits Earth in about 27.3 days (sidereal period).
+Jupiter is the largest planet in the Solar System.
+Venus is the hottest planet in the Solar System.
+Mercury has no natural satellites.
+Mars has two moons, Phobos and Deimos.
+The Sun is a G type main sequence star.
+The Milky Way is a barred spiral galaxy.
+A light year measures distance, not time.
+There are eight recognized planets in the Solar System.
+Pluto is classified as a dwarf planet.
+At 20°C, sound travels in dry air at about 343 meters per second.
+Standard atmospheric pressure is 101,325 pascals.
+Table salt is sodium chloride.
+The chemical formula for carbon dioxide is CO₂.
+Oxygen’s atomic number is 8.
+Hydrogen’s atomic number is 1.
+Helium’s atomic number is 2.
+Diamond is an allotrope of carbon.
+Graphite conducts electricity.
+Copper is an excellent conductor of electricity.
+Mercury is liquid at room temperature.
+The freezing point of mercury is about −38.83°C.
+The periodic table is arranged by increasing atomic number.
+Earth’s axis is tilted by about 23.5 degrees.
+Earth’s seasons are caused by its axial tilt.
+The equator lies at 0 degrees latitude.
+The prime meridian lies at 0 degrees longitude.
+In Euclidean geometry, a triangle’s interior angles sum to 180 degrees.
+A rectangle has four right angles.
+A circle has 360 degrees.
+The number π is approximately 3.14159.
+The constant e is approximately 2.71828.
+The golden ratio is approximately 1.61803.
+Zero is an even number.
+There are infinitely many prime numbers.
+The square root of 2 is irrational.
+The sum of the first n natural numbers is n(n+1)/2.
+0! equals 1.
+An equilateral triangle has three 60 degree angles.
+The base 10 logarithm of 1 is 0.
+The natural logarithm of e is 1.
+Right triangles satisfy the Pythagorean theorem.
+The Pacific Ring of Fire is noted for frequent earthquakes and volcanoes.
+The Himalayas formed from the collision of the Indian and Eurasian plates.
+The San Andreas Fault is a transform plate boundary.
+The Andes are the longest continental mountain range.
+The Amazon rainforest is the largest tropical rainforest.
+Bamboo is a type of grass.
+Bananas are botanically berries.
+Strawberries are not true berries botanically.
+Tomatoes are fruits in botanical terms.
+Honeybees communicate with a waggle dance.
+An octopus has three hearts.
+Giraffes and humans each have seven neck vertebrae.
+Bats are the only mammals capable of sustained flight.
+The blue whale is the largest animal known.
+Penguins are birds that cannot fly.
+The platypus is a mammal that lays eggs.
+Koalas primarily eat eucalyptus leaves.
+The cheetah is the fastest land animal.
+The peregrine falcon is the fastest bird in a dive.
+In daylight, the human eye is most sensitive near green wavelengths.
+The visible spectrum spans roughly 380 to 750 nanometers.
+Infrared light has wavelengths longer than visible red.
+Ultraviolet light has wavelengths shorter than visible violet.
+Sound cannot travel through a vacuum.
+Heat is transferred by conduction, convection, and radiation.
+Pure water reaches maximum density at about 4°C.
+Ice is less dense than liquid water.
+The pH scale is logarithmic.
+At 25°C, a neutral solution has pH 7.
+A catalyst speeds a reaction without being consumed.
+Enzymes act as biological catalysts.
+Hemoglobin carries oxygen in red blood cells.
+The human liver can regenerate part of itself.
+The pancreas produces insulin.
+The skin is the body’s largest organ by area.
+The smallest human bones are in the middle ear.
+Normal human core body temperature is about 37°C.
+Sleep includes REM and non REM stages.
+Earth’s equatorial circumference is about 40,075 kilometers.
+About 71% of Earth’s surface is covered by water.
+Angel Falls in Venezuela is the world’s tallest uninterrupted waterfall.
+The Caspian Sea is the world’s largest inland body of water.
+Lake Superior is the largest freshwater lake by surface area.
+Mount Kilimanjaro is the highest peak in Africa.
+Mont Blanc is the highest mountain in the Alps.
+The prime meridian passes through Greenwich, London.
+The International Date Line roughly follows the 180th meridian.
+Earth’s equatorial radius is about 6,378 kilometers.
+The Moon’s gravity is about one sixth of Earth’s.
+Ocean tides are primarily caused by the Moon’s gravity.
+The Hubble Space Telescope orbits Earth.
+A comet’s tail points away from the Sun.
+Saturn’s rings are composed mostly of ice particles.
+Neptune was discovered in 1846.
+Uranus rotates on its side relative to its orbit.
+A solar eclipse occurs when the Moon passes between Earth and the Sun.
+A lunar eclipse occurs when Earth’s shadow falls on the Moon.
+Photosynthesis converts carbon dioxide and water into glucose and oxygen.
+Chlorophyll gives plants their green color.
+Fungi form a kingdom distinct from plants and animals.
+Bacteria are prokaryotic organisms.
+Viruses require host cells to replicate.
+The SI unit of force is the newton.
+The SI unit of energy is the joule.
+The SI unit of power is the watt.
+The SI unit of electric current is the ampere.
+The SI unit of temperature is the kelvin.
+The SI unit of mass is the kilogram.
+The SI unit of length is the meter.
+The electron’s charge is about −1.602 × 10⁻¹⁹ coulombs.
+Planck’s constant is about 6.626 × 10⁻³⁴ joule seconds.
+Avogadro’s number is about 6.022 × 10²³ per mole.
+Gravitational acceleration near Earth’s surface is about 9.81 m/s².
+The first law of thermodynamics states that energy is conserved.
+In an isolated system, entropy tends to increase.
+In a vacuum, objects fall with the same acceleration if only gravity acts.
+Newton’s third law states that every action has an equal and opposite reaction.
+An atom’s nucleus contains protons and neutrons.
+Electrons occupy orbitals around the nucleus.
+Rows of the periodic table are called periods.
+Columns of the periodic table are called groups.
+A covalent bond involves shared electron pairs.
+An ionic bond involves electron transfer.
+Pure gold is 24 karats.
+Stainless steel is an alloy of iron, chromium, and often nickel.
+Granite is an igneous rock.
+Marble is a metamorphic rock.
+Limestone is primarily composed of calcium carbonate.
+Basalt is a common volcanic rock.
+Quartz is silicon dioxide.
+The Richter scale was historically used to measure earthquake magnitude.
+The Beaufort scale describes wind force.
+A barometer measures atmospheric pressure.
+A thermometer measures temperature.
+An anemometer measures wind speed.
+A hygrometer measures humidity.
+Photosynthesis primarily occurs in leaves.
+The small intestine is longer than the large intestine.
+The appendix is attached to the large intestine.
+The kidneys filter blood to produce urine.
+Earth’s core is composed mainly of iron and nickel.
+The ozone layer absorbs much of the Sun’s ultraviolet radiation.
+Carbon 14 dating estimates the age of once living materials.
+The Celsius and Kelvin scales have equal sized degrees.
+Absolute zero is 0 kelvin.
+Room temperature is commonly about 20–25°C.
+A hectare equals 10,000 square meters.
+A liter equals one cubic decimeter.
+Human red blood cells lack nuclei.
+The femur is the longest bone in the human body.
+The sinoatrial node is the heart’s natural pacemaker.
+The Eiffel Tower is located in Paris.
+The Statue of Liberty was a gift from France to the United States.
+The Mona Lisa is displayed in the Louvre Museum.
+William Shakespeare is credited with 154 sonnets.
+Ludwig van Beethoven composed nine symphonies.
+The piano is a stringed percussion instrument.
+A triangle cannot have two right angles in Euclidean geometry.
+The average Earth–Sun distance is about one astronomical unit.
+Halley’s Comet has an orbital period of about 76 years.
