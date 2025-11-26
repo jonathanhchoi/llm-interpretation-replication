@@ -1,0 +1,18 @@
+{
+  "gpt_gemini_relative_prob": {
+    "correlation": 0.20327462099706492,
+    "p_value": 0.15682103207062106
+  },
+  "gpt_gemini_confidence": {
+    "correlation": 0.8092593493210591,
+    "p_value": 1.1406721323159792e-12
+  },
+  "gpt_claude_confidence": {
+    "correlation": 0.7033420962099363,
+    "p_value": 1.2268816501561009e-08
+  },
+  "gemini_claude_confidence": {
+    "correlation": 0.7181680051563247,
+    "p_value": 4.328686798002494e-09
+  }
+}

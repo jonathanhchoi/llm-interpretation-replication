@@ -15,6 +15,7 @@ build/
 # Jupyter Notebooks
 .ipynb_checkpoints
 *.ipynb_checkpoints
+*.ipynb
 
 # IDE
 .vscode/
@@ -31,17 +32,75 @@ build/
 config.ini
 secrets.json
 
-# Data files (if sensitive)
-# Uncomment if data should not be tracked
-# data/*.csv
-# data/*.json
+# Test files - exclude all test scripts
+**/test_*.py
+test_*.py
 
-# Results and outputs
-results/*.png
-results/*.pdf
-results/*.json
-results/*.csv
-*.log
+# Investigation and debug scripts
+analysis/investigate_*.py
+analysis/check_*.py
+analysis/prompt_summary.py
+
+# Duplicate/backup versions of scripts
+analysis/evaluate_irrelevant_perturbations_cached.py
+analysis/evaluate_irrelevant_perturbations_original.py
+
+# Oaxaca-Blinder decomposition (not used in final paper)
+analysis/oaxaca_blinder_decomposition.py
+
+# Directories to exclude
+.claude/
+gdrive/
+do_not_upload/
+results/test_visualization/
+results/irrelevant_perturbations/test_output/
+analysis/.claude/
+
+# Intermediate results and cache files
+**/checkpoint.json
+**/checkpoint.pkl
+**/progress.json
+**/api_cache.json
+**/results_cache.pkl
+**/*_intermediate.json
+**/intermediate_results*.csv
+
+# Batch API temporary files
+data/gemini_batch_requests.jsonl
+data/gemini_batch_requests_metadata.json
+data/gemini_batch_responses.jsonl
+data/gemini_batch_responses_broken.jsonl
+
+# Generated summary/documentation files (keep only README.md)
+10_GROUPS_UPDATE_SUMMARY.md
+PERTURBATION_ANALYSIS_README.md
+GEMINI_BATCH_API_README.md
+CONFIDENCE_ANALYSIS_README.md
+SURVEY2_LLM_EVALUATION_GUIDE.md
+LATEX_UPDATE_SUMMARY.md
+EXCLUSION_CRITERIA_FIX.md
+GITHUB_UPLOAD_INSTRUCTIONS.md
+analysis/BOOTSTRAP_UPDATE_SUMMARY.md
+analysis/CHANGES_SUMMARY.md
+analysis/INCOMPLETE_CACHE_FIX_SUMMARY.md
+analysis/MISSING_PROMPTS_INVESTIGATION.md
+
+# Temporary/utility scripts at root level
+combine_survey_results.py
+setup_survey2_evaluation.py
+generate_latex_update.py
+verify_exclusion_criteria.py
+extract_group_correlations.py
+run_full_analysis.py
+
+# Generated LaTeX snippets (not main documents)
+formatted_table.tex
+demographics_table.tex
+passage_to_update.tex
+updated_power_analysis.tex
+
+# Generated JSON at root
+consolidated_analysis_results.json
 
 # Model weights and large files
 *.pkl
@@ -62,6 +121,11 @@ Thumbs.db
 .DS_Store
 desktop.ini
 
+# Windows artifacts
+nul
+*Zone.Identifier
+*.Zone.Identifier
+
 # LaTeX auxiliary files
 *.aux
 *.lof
@@ -77,6 +141,24 @@ desktop.ini
 .*.lb
 *.synctex.gz
 *.fdb_latexmk
+*.bbl
+*.blg
 
-# Zone identifiers (Windows)
-*:Zone.Identifier
+# Results - keep only final outputs needed for paper
+# Exclude intermediate batch results
+results/claude_batch_results/
+
+# Exclude test xlsx files
+results/*_test.xlsx
+
+# Survey analysis generated outputs (keep source scripts)
+survey_analysis/results/
+survey_analysis/__pycache__/
+survey_analysis/*.json
+
+# Analysis results subdirectories with intermediate data
+results/closed_source_evaluation/intermediate_results_*.csv
+results/oaxaca_blinder/
+
+# Large files exceeding GitHub's 100MB limit
+results/prompt_similarity/pairwise_rephrasings_similarity.xlsx

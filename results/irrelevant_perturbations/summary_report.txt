@@ -1,0 +1,414 @@
+IRRELEVANT STATEMENT PERTURBATION ANALYSIS
+============================================================
+Generated: 2025-11-18 03:10:42
+
+
+Insurance Policy Water Damage Exclusion
+----------------------------------------
+
+gpt:
+  Consistency: 100.00%
+  Original Response: Not Covered
+  Number of Samples: 401
+
+  Confidence Statistics:
+    Original: 10.0
+    Mean (all): 14.2
+    Std Dev (all): 6.6
+    Median (all): 10.0
+    95% CI: [5.0, 30.0]
+    Mean (perturbed only): 14.2
+    Std Dev (perturbed only): 6.6
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of wate...
+    
+    Confidence Prompt:
+    An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of wate...
+
+claude:
+  Consistency: 100.00%
+  Original Response: Not Covered
+  Number of Samples: 401
+
+  Confidence Statistics:
+    Original: 15.0
+    Mean (all): 22.7
+    Std Dev (all): 12.6
+    Median (all): 20.0
+    95% CI: [15.0, 75.0]
+    Mean (perturbed only): 22.8
+    Std Dev (perturbed only): 12.6
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of wate...
+    
+    Confidence Prompt:
+    An insurance policy contains the following exclusion: 'We will not pay for loss or damage caused directly or indirectly by flood, surface water, waves, tides, tidal waves, overflow of any body of wate...
+
+gemini:
+  Consistency: 100.00%
+  Original Response: Not Covered
+  Number of Samples: 349
+
+  Confidence Statistics:
+    Original: 20.931232091690543
+    Mean (all): 20.9
+    Std Dev (all): 23.9
+    Median (all): 10.0
+    95% CI: [5.0, 85.0]
+    Mean (perturbed only): 20.9
+    Std Dev (perturbed only): 23.9
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    N/A - Original missing
+    
+    Confidence Prompt:
+    N/A - Original missing
+
+Prenuptial Agreement Filing Date
+----------------------------------------
+
+gpt:
+  Consistency: 99.25%
+  Original Response: Ultimate
+  Number of Samples: 401
+
+  Confidence Statistics:
+    Original: 40.0
+    Mean (all): 39.6
+    Std Dev (all): 8.9
+    Median (all): 40.0
+    95% CI: [30.0, 60.0]
+    Mean (perturbed only): 39.6
+    Std Dev (perturbed only): 8.9
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_end: 98.50%
+
+  Prompts Used:
+    Response Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+    
+    Confidence Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+
+claude:
+  Consistency: 97.00%
+  Original Response: Ultimate
+  Number of Samples: 401
+
+  Confidence Statistics:
+    Original: 75.0
+    Mean (all): 30.2
+    Std Dev (all): 24.9
+    Median (all): 15.0
+    95% CI: [15.0, 75.0]
+    Mean (perturbed only): 30.1
+    Std Dev (perturbed only): 24.8
+
+  Position Consistency:
+    0_beginning: 98.00%
+    1_end: 96.00%
+
+  Prompts Used:
+    Response Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+    
+    Confidence Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+
+gemini:
+  Consistency: 97.00%
+  Original Response: Ultimate
+  Number of Samples: 401
+
+  Confidence Statistics:
+    Original: 10.0
+    Mean (all): 16.9
+    Std Dev (all): 23.2
+    Median (all): 10.0
+    95% CI: [0.0, 95.0]
+    Mean (perturbed only): 16.9
+    Std Dev (perturbed only): 23.2
+
+  Position Consistency:
+    0_beginning: 98.00%
+    1_end: 96.00%
+
+  Prompts Used:
+    Response Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+    
+    Confidence Prompt:
+    In a prenuptial agreement, if one party files a petition for divorce after seven years, withdraws it without serving it, and then files again after ten years, which filing date determines the number o...
+
+Contract Term Affiliates Interpretation
+----------------------------------------
+
+gpt:
+  Consistency: 100.00%
+  Original Response: Future
+  Number of Samples: 601
+
+  Confidence Statistics:
+    Original: 30.0
+    Mean (all): 28.6
+    Std Dev (all): 5.7
+    Median (all): 30.0
+    95% CI: [20.0, 40.0]
+    Mean (perturbed only): 28.6
+    Std Dev (perturbed only): 5.8
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_after_sentence_1: 100.00%
+    2_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+    
+    Confidence Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+
+claude:
+  Consistency: 81.50%
+  Original Response: Future
+  Number of Samples: 601
+
+  Confidence Statistics:
+    Original: 75.0
+    Mean (all): 25.2
+    Std Dev (all): 8.6
+    Median (all): 25.0
+    95% CI: [15.0, 65.0]
+    Mean (perturbed only): 25.1
+    Std Dev (perturbed only): 8.3
+
+  Position Consistency:
+    0_beginning: 92.00%
+    1_after_sentence_1: 94.50%
+    2_end: 58.00%
+
+  Prompts Used:
+    Response Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+    
+    Confidence Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+
+gemini:
+  Consistency: 99.50%
+  Original Response: Future
+  Number of Samples: 601
+
+  Confidence Statistics:
+    Original: 25.0
+    Mean (all): 18.7
+    Std Dev (all): 15.7
+    Median (all): 15.0
+    95% CI: [10.0, 75.0]
+    Mean (perturbed only): 18.7
+    Std Dev (perturbed only): 15.7
+
+  Position Consistency:
+    0_beginning: 99.50%
+    1_after_sentence_1: 99.00%
+    2_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+    
+    Confidence Prompt:
+    Does the following contract term from 1961 naturally include only existing affiliates at the time of contract, or does it potentially encompass affiliates that might be created over time? The term bin...
+
+Construction Payment Terms
+----------------------------------------
+
+gpt:
+  Consistency: 100.00%
+  Original Response: Monthly
+  Number of Samples: 1001
+
+  Confidence Statistics:
+    Original: 60.0
+    Mean (all): 44.3
+    Std Dev (all): 10.7
+    Median (all): 40.0
+    95% CI: [30.0, 70.0]
+    Mean (perturbed only): 44.3
+    Std Dev (perturbed only): 10.7
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_after_sentence_1: 100.00%
+    2_after_sentence_2: 100.00%
+    3_after_sentence_3: 100.00%
+    4_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+    
+    Confidence Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+
+claude:
+  Consistency: 86.90%
+  Original Response: Completion
+  Number of Samples: 1001
+
+  Confidence Statistics:
+    Original: 75.0
+    Mean (all): 25.5
+    Std Dev (all): 16.3
+    Median (all): 15.0
+    95% CI: [15.0, 50.0]
+    Mean (perturbed only): 25.5
+    Std Dev (perturbed only): 16.2
+
+  Position Consistency:
+    0_beginning: 94.50%
+    1_after_sentence_1: 98.00%
+    2_after_sentence_2: 95.00%
+    3_after_sentence_3: 88.50%
+    4_end: 58.50%
+
+  Prompts Used:
+    Response Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+    
+    Confidence Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+
+gemini:
+  Consistency: 99.80%
+  Original Response: Monthly
+  Number of Samples: 1001
+
+  Confidence Statistics:
+    Original: 90.0
+    Mean (all): 90.3
+    Std Dev (all): 6.8
+    Median (all): 90.0
+    95% CI: [75.0, 95.0]
+    Mean (perturbed only): 90.3
+    Std Dev (perturbed only): 6.8
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_after_sentence_1: 99.50%
+    2_after_sentence_2: 99.50%
+    3_after_sentence_3: 100.00%
+    4_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+    
+    Confidence Prompt:
+    A contractor and business corresponded about construction of a new foundry. The contractor offered to do the job either by offering an itemized list or charging cost + 10%. After a phone call where th...
+
+Insurance Policy Burglary Coverage
+----------------------------------------
+
+gpt:
+  Consistency: 45.00%
+  Original Response: Covered
+  Number of Samples: 844
+
+  Confidence Statistics:
+    Original: 0.0
+    Mean (all): 31.6
+    Std Dev (all): 33.9
+    Median (all): 0.0
+    95% CI: [0.0, 90.0]
+    Mean (perturbed only): 31.6
+    Std Dev (perturbed only): 33.9
+
+  Position Consistency:
+    0_beginning: 57.50%
+    1_after_sentence_1: 69.50%
+    2_after_sentence_2: 40.00%
+    3_after_sentence_3: 13.50%
+    4_end: 44.50%
+
+  Prompts Used:
+    Response Prompt:
+    You are analyzing an insurance policy dispute. The policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry ...
+    
+    Confidence Prompt:
+    You are analyzing an insurance policy dispute. The policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry ...
+
+claude:
+  Consistency: 99.90%
+  Original Response: Not Covered
+  Number of Samples: 1001
+
+  Confidence Statistics:
+    Original: 25.0
+    Mean (all): 28.6
+    Std Dev (all): 13.9
+    Median (all): 25.0
+    95% CI: [15.0, 75.0]
+    Mean (perturbed only): 28.6
+    Std Dev (perturbed only): 13.9
+
+  Position Consistency:
+    0_beginning: 100.00%
+    1_after_sentence_1: 100.00%
+    2_after_sentence_2: 100.00%
+    3_after_sentence_3: 100.00%
+    4_end: 99.50%
+
+  Prompts Used:
+    Response Prompt:
+    You are analyzing an insurance policy dispute. The policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry ...
+    
+    Confidence Prompt:
+    You are analyzing an insurance policy dispute. The policy states: '[Insurer will pay for] the felonious abstraction of insured property (1) from within the premises by a person making felonious entry ...
+
+gemini:
+  Consistency: 99.73%
+  Original Response: Not Covered
+  Number of Samples: 740
+
+  Confidence Statistics:
+    Original: 16.013513513513512
+    Mean (all): 16.0
+    Std Dev (all): 20.1
+    Median (all): 10.0
+    95% CI: [0.0, 67.6]
+    Mean (perturbed only): 16.0
+    Std Dev (perturbed only): 20.1
+
+  Position Consistency:
+    1_after_sentence_1: 99.29%
+    2_after_sentence_2: 100.00%
+    3_after_sentence_3: 99.50%
+    4_end: 100.00%
+
+  Prompts Used:
+    Response Prompt:
+    N/A - Original missing
+    
+    Confidence Prompt:
+    N/A - Original missing

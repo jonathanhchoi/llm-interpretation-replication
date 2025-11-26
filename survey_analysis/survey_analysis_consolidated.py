@@ -6,26 +6,52 @@ import json
 import warnings
 warnings.filterwarnings('ignore')
 
-def load_and_clean_survey_data(filepath):
-    """Load the survey data and perform initial cleaning."""
-    df = pd.read_csv(filepath)
-    
-    # Get the actual data rows (skip the header description row)
-    df = df[2:].reset_index(drop=True)
-    
+def load_and_clean_survey_data(filepaths):
+    """Load the survey data and perform initial cleaning.
+
+    Args:
+        filepaths: A string (single file path) or list of file paths to load and combine
+    """
+    # Handle single filepath or list of filepaths
+    if isinstance(filepaths, str):
+        filepaths = [filepaths]
+
+    dfs = []
+    for survey_idx, filepath in enumerate(filepaths, start=1):
+        df_temp = pd.read_csv(filepath)
+        # Get the actual data rows (skip the header description row)
+        df_temp = df_temp[2:].reset_index(drop=True)
+
+        # Rename question columns to include survey prefix (S1_, S2_, etc.)
+        # This distinguishes questions from different surveys
+        rename_dict = {}
+        for group in range(1, 6):
+            for question in range(1, 12):
+                old_col = f'Q{group}_{question}'
+                if old_col in df_temp.columns:
+                    new_col = f'S{survey_idx}_Q{group}_{question}'
+                    rename_dict[old_col] = new_col
+
+        df_temp = df_temp.rename(columns=rename_dict)
+        dfs.append(df_temp)
+
+    # Concatenate all dataframes
+    df = pd.concat(dfs, ignore_index=True)
+
     # Convert Duration to numeric
     df['Duration (in seconds)'] = pd.to_numeric(df['Duration (in seconds)'], errors='coerce')
-    
-    # Get question columns (Q1_1 through Q5_11)
+
+    # Get question columns (S1_Q1_1 through S2_Q5_11 for 2 surveys = 10 groups)
     question_cols = []
-    for group in range(1, 6):
-        for question in range(1, 12):
-            col = f'Q{group}_{question}'
-            if col in df.columns:
-                question_cols.append(col)
-                # Convert to numeric
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-    
+    for survey_idx in range(1, len(filepaths) + 1):
+        for group in range(1, 6):
+            for question in range(1, 12):
+                col = f'S{survey_idx}_Q{group}_{question}'
+                if col in df.columns:
+                    question_cols.append(col)
+                    # Convert to numeric
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+
     return df, question_cols
 
 def load_llm_data(filepath):
@@ -67,11 +93,14 @@ def apply_exclusion_criteria(df, question_cols):
     df = df.drop(identical_excluded)
     
     # 3. Filter attention check failures
+    # Extract all attention check columns (those ending with _8)
+    attention_cols = [col for col in question_cols if col.endswith('_8')]
+
     attention_failed = []
     for idx, row in df.iterrows():
-        for group in range(1, 6):
-            attention_col = f'Q{group}_8'
-            if attention_col in df.columns and pd.notna(row[attention_col]):
+        # Check all attention check questions across all surveys/groups
+        for attention_col in attention_cols:
+            if pd.notna(row[attention_col]):
                 if row[attention_col] != 100:
                     attention_failed.append(idx)
                     break
@@ -84,45 +113,67 @@ def apply_exclusion_criteria(df, question_cols):
     
     return df, exclusion_stats
 
-def extract_question_text(survey_df_raw):
-    """Extract question text from survey headers."""
-    # Load the raw survey file to get headers
-    df_raw = pd.read_csv('word_meaning_survey_results.csv')
+def extract_question_text(survey_df_raw, filepaths):
+    """Extract question text from survey headers.
+
+    Args:
+        survey_df_raw: The survey dataframe (not used, kept for backwards compatibility)
+        filepaths: Path(s) to survey file(s) to extract question text from
+    """
+    # Handle single filepath or list of filepaths
+    if isinstance(filepaths, str):
+        filepaths = [filepaths]
+
     question_mapping = {}
-    headers = df_raw.iloc[0]  # Get the row with question text
-    
-    for col in df_raw.columns:
-        if col.startswith('Q') and '_' in col:
-            text = headers[col]
-            if pd.notna(text) and isinstance(text, str):
-                # Extract the actual question part
-                if ' - ' in text:
-                    question_text = text.split(' - ')[-1].strip()
-                    question_mapping[col] = question_text
-    
+
+    # Process each survey file
+    for survey_idx, filepath in enumerate(filepaths, start=1):
+        df_raw = pd.read_csv(filepath)
+        headers = df_raw.iloc[0]  # Get the row with question text
+
+        for col in df_raw.columns:
+            if col.startswith('Q') and '_' in col:
+                text = headers[col]
+                if pd.notna(text) and isinstance(text, str):
+                    # Extract the actual question part
+                    if ' - ' in text:
+                        question_text = text.split(' - ')[-1].strip()
+                        # Use the prefixed column name (S1_Q1_1, S2_Q1_1, etc.)
+                        new_col = f'S{survey_idx}_{col}'
+                        question_mapping[new_col] = question_text
+
     return question_mapping
 
-def match_survey_to_llm_questions(survey_df, llm_df):
-    """Match survey questions to LLM prompts."""
+def match_survey_to_llm_questions(survey_df, llm_df, survey_filepaths=None):
+    """Match survey questions to LLM prompts.
+
+    Args:
+        survey_df: Survey dataframe
+        llm_df: LLM dataframe
+        survey_filepaths: Path(s) to survey file(s) for extracting question text
+    """
     # Get question mapping from survey
-    question_mapping = extract_question_text(survey_df)
-    
-    # Filter out attention check questions (Q*_8)
+    if survey_filepaths:
+        question_mapping = extract_question_text(survey_df, survey_filepaths)
+    else:
+        question_mapping = extract_question_text(survey_df, 'word_meaning_survey_results.csv')
+
+    # Filter out attention check questions (S*_Q*_8)
     question_mapping = {k: v for k, v in question_mapping.items() if not k.endswith('_8')}
-    
+
     # Create reverse mapping from prompt text to question ID
     prompt_to_question = {}
     for q_id, q_text in question_mapping.items():
         prompt_to_question[q_text] = q_id
-    
+
     # Match with LLM data
     llm_prompts = llm_df['prompt'].unique()
     matches = {}
-    
+
     for prompt in llm_prompts:
         if prompt in prompt_to_question:
             matches[prompt] = prompt_to_question[prompt]
-    
+
     return matches, question_mapping
 
 def calculate_human_responses_by_question(df, question_cols):
@@ -353,15 +404,32 @@ def calculate_human_cross_prompt_correlations(df, question_cols, n_bootstrap=100
     """Calculate pairwise correlations between humans within each group with bootstrapping."""
     all_correlations = []
     group_results = {}
-    
-    # Process each group separately (groups 1-5)
-    for group in range(1, 6):
-        # Get questions for this group (excluding attention check Q*_8)
-        group_questions = [f'Q{group}_{i}' for i in range(1, 12) if i != 8]
-        
+
+    # Extract unique group identifiers from question_cols (e.g., S1_Q1, S1_Q2, ..., S2_Q1, S2_Q2, ...)
+    groups = set()
+    for col in question_cols:
+        # Parse column name like S1_Q1_1 -> S1_Q1
+        parts = col.split('_')
+        if len(parts) >= 3:
+            group_id = f"{parts[0]}_Q{parts[1][1:]}"  # S1_Q1, S2_Q3, etc.
+            groups.add(group_id)
+
+    # Process each group separately
+    for group_id in sorted(groups):
+        # Get questions for this group (excluding attention check *_8)
+        group_questions = [col for col in question_cols if col.startswith(group_id + '_') and not col.endswith('_8')]
+
+        if len(group_questions) == 0:
+            continue
+
+        # Get the first question column to check for respondents
+        first_question = group_questions[0] if group_questions else None
+        if first_question is None:
+            continue
+
         # Get respondents who answered this group
-        group_respondents = df[df[f'Q{group}_1'].notna()].copy()
-        
+        group_respondents = df[df[first_question].notna()].copy()
+
         if len(group_respondents) < 2:
             continue
             
@@ -401,7 +469,7 @@ def calculate_human_cross_prompt_correlations(df, question_cols, n_bootstrap=100
                     group_correlations.append(corr_value)
                     all_correlations.append(corr_value)
         
-        group_results[f'Group_{group}'] = {
+        group_results[group_id] = {
             'n_respondents': len(respondent_ids),
             'n_pairs': len(group_correlations),
             'mean_correlation': np.mean(group_correlations) if group_correlations else 0,
@@ -413,23 +481,29 @@ def calculate_human_cross_prompt_correlations(df, question_cols, n_bootstrap=100
     
     # Bootstrap by resampling within groups
     bootstrap_means = []
-    
+
     for _ in range(n_bootstrap):
         boot_correlations = []
-        
-        for group in range(1, 6):
-            if f'Group_{group}' not in group_results:
+
+        for group_id in sorted(groups):
+            if group_id not in group_results:
                 continue
-                
-            group_questions = [f'Q{group}_{i}' for i in range(1, 12) if i != 8]
+
+            group_questions = [col for col in question_cols if col.startswith(group_id + '_') and not col.endswith('_8')]
             n_questions = len(group_questions)
-            
+
+            if n_questions < 2:
+                continue
+
             # Sample questions with replacement
             sampled_indices = np.random.choice(n_questions, size=n_questions, replace=True)
             sampled_questions = [group_questions[i] for i in sampled_indices]
-            
+
+            # Get the first question column to check for respondents
+            first_question = group_questions[0]
+
             # Get respondents for this group
-            group_respondents = df[df[f'Q{group}_1'].notna()].copy()
+            group_respondents = df[df[first_question].notna()].copy()
             
             # Create bootstrap data matrix
             boot_data_matrix = []
@@ -483,22 +557,28 @@ def calculate_llm_cross_prompt_correlations(llm_df, human_question_mapping, n_bo
     """Calculate pairwise correlations between models within groups matching human groups."""
     all_correlations = []
     group_results = {}
-    
+
     # Map prompts to groups based on matched survey questions
     prompt_to_group = {}
     for prompt, survey_q in human_question_mapping.items():
         if survey_q:  # If there's a match
-            group_num = int(survey_q.split('_')[0][1:])  # Extract group number from Q1_1 -> 1
-            prompt_to_group[prompt] = group_num
-    
+            # Extract group identifier from S1_Q1_1 -> S1_Q1
+            parts = survey_q.split('_')
+            if len(parts) >= 3:
+                group_id = f"{parts[0]}_Q{parts[1][1:]}"  # S1_Q1, S2_Q3, etc.
+                prompt_to_group[prompt] = group_id
+
+    # Get unique groups
+    groups = set(prompt_to_group.values())
+
     # Process each group separately
-    for group in range(1, 6):
+    for group_id in sorted(groups):
         # Get prompts for this group
-        group_prompts = [p for p, g in prompt_to_group.items() if g == group]
-        
+        group_prompts = [p for p, g in prompt_to_group.items() if g == group_id]
+
         # Skip attention check questions (8th question in each group)
         group_prompts = [p for p in group_prompts if not p.endswith('_8')]
-        
+
         if len(group_prompts) < 2:
             continue
         
@@ -522,7 +602,7 @@ def calculate_llm_cross_prompt_correlations(llm_df, human_question_mapping, n_bo
                     group_correlations.append(corr_value)
                     all_correlations.append(corr_value)
         
-        group_results[f'Group_{group}'] = {
+        group_results[group_id] = {
             'n_prompts': len(group_prompts),
             'n_models': len(models),
             'n_pairs': len(group_correlations),
@@ -535,16 +615,16 @@ def calculate_llm_cross_prompt_correlations(llm_df, human_question_mapping, n_bo
     
     # Bootstrap by resampling within groups
     bootstrap_means = []
-    
+
     for _ in range(n_bootstrap):
         boot_correlations = []
-        
-        for group in range(1, 6):
-            if f'Group_{group}' not in group_results:
+
+        for group_id in sorted(groups):
+            if group_id not in group_results:
                 continue
-            
+
             # Get prompts for this group
-            group_prompts = [p for p, g in prompt_to_group.items() if g == group]
+            group_prompts = [p for p, g in prompt_to_group.items() if g == group_id]
             group_prompts = [p for p in group_prompts if not p.endswith('_8')]
             n_prompts = len(group_prompts)
             
@@ -599,8 +679,25 @@ def calculate_cross_prompt_difference_ci(df, llm_df, question_cols, human_questi
     prompt_to_group = {}
     for prompt, survey_q in human_question_mapping.items():
         if survey_q:  # If there's a match
-            group_num = int(survey_q.split('_')[0][1:])  # Extract group number from Q1_1 -> 1
-            prompt_to_group[prompt] = group_num
+            # Extract group identifier from S1_Q1_1 -> S1_Q1
+            parts = survey_q.split('_')
+            if len(parts) >= 3:
+                group_id = f"{parts[0]}_Q{parts[1][1:]}"  # S1_Q1, S2_Q3, etc.
+                prompt_to_group[prompt] = group_id
+
+    # Extract unique group identifiers from question_cols
+    groups_human = set()
+    for col in question_cols:
+        parts = col.split('_')
+        if len(parts) >= 3:
+            group_id = f"{parts[0]}_Q{parts[1][1:]}"
+            groups_human.add(group_id)
+
+    # Get unique LLM groups
+    groups_llm = set(prompt_to_group.values())
+
+    # Use intersection of both to ensure we only process groups with both human and LLM data
+    groups = groups_human.intersection(groups_llm)
     
     # Bootstrap to calculate difference CI
     bootstrap_differences = []
@@ -608,15 +705,21 @@ def calculate_cross_prompt_difference_ci(df, llm_df, question_cols, human_questi
     for boot_iter in range(n_bootstrap):
         human_boot_correlations = []
         llm_boot_correlations = []
-        
+
         # Process each group separately
-        for group in range(1, 6):
+        for group_id in sorted(groups):
             # Bootstrap human correlations for this group
-            group_questions = [f'Q{group}_{i}' for i in range(1, 12) if i != 8]
+            group_questions = [col for col in question_cols if col.startswith(group_id + '_') and not col.endswith('_8')]
             n_questions = len(group_questions)
-            
+
+            if n_questions < 2:
+                continue
+
+            # Get the first question column to check for respondents
+            first_question = group_questions[0]
+
             # Get respondents who answered this group
-            group_respondents = df[df[f'Q{group}_1'].notna()].copy()
+            group_respondents = df[df[first_question].notna()].copy()
             
             if len(group_respondents) >= 2:
                 # Sample questions with replacement
@@ -652,7 +755,7 @@ def calculate_cross_prompt_difference_ci(df, llm_df, question_cols, human_questi
                                 human_boot_correlations.append(corr_value)
             
             # Bootstrap LLM correlations for this group
-            group_prompts = [p for p, g in prompt_to_group.items() if g == group]
+            group_prompts = [p for p, g in prompt_to_group.items() if g == group_id]
             group_prompts = [p for p in group_prompts if not p.endswith('_8')]
             n_prompts = len(group_prompts)
             
@@ -925,10 +1028,21 @@ def save_results(output_file, exclusion_stats, human_stats, llm_stats,
 def main():
     # Load data
     print("Loading survey data...")
-    survey_df, question_cols = load_and_clean_survey_data('word_meaning_survey_results.csv')
-    
+    import os
+    # Get the base directory (parent of survey_analysis)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, 'data')
+
+    survey_files = [
+        os.path.join(data_dir, 'word_meaning_survey_results.csv'),
+        os.path.join(data_dir, 'word_meaning_survey_results_part_2.csv')
+    ]
+    survey_df, question_cols = load_and_clean_survey_data(survey_files)
+    print(f"Loaded {len(survey_df)} total survey responses from {len(survey_files)} files")
+
     print("Loading LLM data...")
-    llm_df = load_llm_data('instruct_model_comparison_results.csv')
+    # Use combined results with both Survey 1 and Survey 2
+    llm_df = load_llm_data(os.path.join(data_dir, 'instruct_model_comparison_results_combined.csv'))
     
     # Apply exclusion criteria
     print("Applying exclusion criteria...")
@@ -936,7 +1050,7 @@ def main():
     
     # Match questions
     print("Matching survey questions to LLM prompts...")
-    matches, question_mapping = match_survey_to_llm_questions(survey_df, llm_df)
+    matches, question_mapping = match_survey_to_llm_questions(survey_df, llm_df, survey_files)
     
     # Calculate human responses by question
     print("Calculating human response statistics...")
