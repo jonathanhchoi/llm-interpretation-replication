@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "model_results_path": "data/model_comparison_results.csv",
+    "survey_paths": [
+      "data/word_meaning_survey_results.csv",
+      "data/word_meaning_survey_results_part_2.csv"
+    ],
+    "human_cleaned_n": 884,
+    "human_question_count": 100,
+    "matched_questions_per_checkpoint": 49,
+    "probability_formula": "yes_prob / (yes_prob + no_prob)",
+    "bootstrap_unit": "question",
+    "bootstrap_resamples": 10000,
+    "bootstrap_ci": "percentile [2.5, 97.5]",
+    "seed": 42,
+    "rng_scheme": "numpy SeedSequence(seed).spawn(6), one independent stream per checkpoint in reported family/base-tuned order",
+    "rng_spawn_keys": {
+      "tiiuae/falcon-7b": [
+        0
+      ],
+      "tiiuae/falcon-7b-instruct": [
+        1
+      ],
+      "stabilityai/stablelm-base-alpha-7b": [
+        2
+      ],
+      "stabilityai/stablelm-tuned-alpha-7b": [
+        3
+      ],
+      "togethercomputer/RedPajama-INCITE-7B-Base": [
+        4
+      ],
+      "togethercomputer/RedPajama-INCITE-7B-Instruct": [
+        5
+      ]
+    },
+    "difference_method": "tuned checkpoint bootstrap MAE minus independently resampled base checkpoint bootstrap MAE",
+    "p_value_method": "two times the smaller empirical probability that the difference is <= 0 or >= 0, capped at 1"
+  },
+  "families": {
+    "Falcon": {
+      "base": {
+        "model_id": "tiiuae/falcon-7b",
+        "mae": 0.2127293161525415,
+        "ci_lower": 0.17787105973204587,
+        "ci_upper": 0.24900502355718715,
+        "n_questions": 49
+      },
+      "tuned": {
+        "model_id": "tiiuae/falcon-7b-instruct",
+        "mae": 0.28600288249611067,
+        "ci_lower": 0.2442177953496383,
+        "ci_upper": 0.32942437355233406,
+        "n_questions": 49
+      },
+      "tuned_minus_base": {
+        "mean": 0.07292482543889765,
+        "observed_difference": 0.07327356634356916,
+        "ci_lower": 0.01640455703106523,
+        "ci_upper": 0.12919700246497293,
+        "p_value_two_sided": 0.0112
+      }
+    },
+    "StableLM": {
+      "base": {
+        "model_id": "stabilityai/stablelm-base-alpha-7b",
+        "mae": 0.24630266675426085,
+        "ci_lower": 0.20111666523602528,
+        "ci_upper": 0.293130733053948,
+        "n_questions": 49
+      },
+      "tuned": {
+        "model_id": "stabilityai/stablelm-tuned-alpha-7b",
+        "mae": 0.21132069200343345,
+        "ci_lower": 0.1757482282982628,
+        "ci_upper": 0.24760574327973775,
+        "n_questions": 49
+      },
+      "tuned_minus_base": {
+        "mean": -0.03497891538282143,
+        "observed_difference": -0.0349819747508274,
+        "ci_lower": -0.09312281064844419,
+        "ci_upper": 0.023528949293880098,
+        "p_value_two_sided": 0.2456
+      }
+    },
+    "RedPajama": {
+      "base": {
+        "model_id": "togethercomputer/RedPajama-INCITE-7B-Base",
+        "mae": 0.13668646460875206,
+        "ci_lower": 0.10789811171315607,
+        "ci_upper": 0.16660361888580916,
+        "n_questions": 49
+      },
+      "tuned": {
+        "model_id": "togethercomputer/RedPajama-INCITE-7B-Instruct",
+        "mae": 0.13478036259181617,
+        "ci_lower": 0.10555449788512908,
+        "ci_upper": 0.16511929321052682,
+        "n_questions": 49
+      },
+      "tuned_minus_base": {
+        "mean": -0.0021563868994063265,
+        "observed_difference": -0.00190610201693589,
+        "ci_lower": -0.04347015747541425,
+        "ci_upper": 0.039291848083433216,
+        "p_value_two_sided": 0.92
+      }
+    }
+  }
+}

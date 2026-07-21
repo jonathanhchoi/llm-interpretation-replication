@@ -144,7 +144,7 @@ def create_single_model_visualization(ax, df, model_name, prompts):
         # Add mean point (black dot)
         ax.scatter(plot_position, mean_conf, color='black', s=80, zorder=5)
 
-        # Add error bars for 95% CI
+        # Add bars for the descriptive 95% output interval
         ax.plot([plot_position, plot_position], [lower_percentile, upper_percentile],
                color='black', linewidth=2, zorder=4)
 
@@ -251,7 +251,7 @@ def create_comprehensive_latex_table(data, output_file='results/combined_analysi
     latex_lines.append("\\centering")
     latex_lines.append("\\begin{tabular}{lcccccc}")
     latex_lines.append("\\hline")
-    latex_lines.append("\\textbf{Model /} & \\textbf{Mean} & \\textbf{Std Dev} & \\textbf{2.5th} & \\textbf{97.5th} & \\textbf{95\\% CI} \\\\")
+    latex_lines.append("\\textbf{Model /} & \\textbf{Mean} & \\textbf{Std Dev} & \\textbf{2.5th} & \\textbf{97.5th} & \\textbf{95\\% Interval} \\\\")
     latex_lines.append("\\textbf{Prompt Number} & \\textbf{Confidence} & & \\textbf{Percentile} & \\textbf{Percentile} & \\textbf{Width} \\\\")
     latex_lines.append("\\hline")
 
@@ -285,10 +285,10 @@ def create_comprehensive_latex_table(data, output_file='results/combined_analysi
                         std_conf = confidence_values.std()
                         percentile_2_5 = np.percentile(confidence_values, 2.5)
                         percentile_97_5 = np.percentile(confidence_values, 97.5)
-                        ci_width = percentile_97_5 - percentile_2_5
+                        interval_width = percentile_97_5 - percentile_2_5
 
                         latex_lines.append(f"{prompt_idx+1} & {mean_conf:.2f} & {std_conf:.2f} & "
-                                         f"{percentile_2_5:.2f} & {percentile_97_5:.2f} & {ci_width:.2f} \\\\")
+                                         f"{percentile_2_5:.2f} & {percentile_97_5:.2f} & {interval_width:.2f} \\\\")
                     else:
                         latex_lines.append(f"{prompt_idx+1} & -- & -- & -- & -- & -- \\\\")
                     break
@@ -304,7 +304,7 @@ def create_comprehensive_latex_table(data, output_file='results/combined_analysi
                       "for GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro. This table presents confidence assessments from three "
                       "large language models on the same set of legal interpretation prompts. Each model was directly queried "
                       "for its confidence on a 0-100 scale. The same perturbations of five legal scenarios were tested across "
-                      "all models. The 95\\% confidence interval width measures variation in each model's confidence assessments "
+                      "all models. The descriptive 95\\% output interval width measures variation in each model's confidence assessments "
                       "across different phrasings of the same legal question.}")
     latex_lines.append("\\label{tab:three_model_confidence_stats}")
     latex_lines.append("\\end{table}")

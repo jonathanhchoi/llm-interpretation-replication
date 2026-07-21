@@ -45,7 +45,7 @@ MODELS_TO_TEST = [
 # Reasoning models that don't support temperature, logprobs, or top_logprobs parameters
 REASONING_MODELS = ["o4-mini-2025-04-16", "o3-2025-04-16", "gpt-5"]
 REASONING_MODEL_RUNS = 10  # Number of times to run reasoning models for averaging
-SKIP_REASONING_MODEL_LOGPROBS = True  # When True, skip logprob approximation for reasoning models (only use confidence method)
+SKIP_REASONING_MODEL_LOGPROBS = True  # When True, skip hidden-logprob proxies for reasoning models (only use confidence method)
 
 # Model pricing (per million tokens)
 MODEL_PRICING = {
@@ -67,6 +67,41 @@ MODEL_PRICING = {
 # Initialize the Anthropic client and OpenAI API key
 anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+
+def calculate_confidence_topk_metrics(logprobs_obj, max_confidence=100):
+    """Calculate weighted confidence and bound omitted top-k mass."""
+    if not logprobs_obj or 'content' not in logprobs_obj or not logprobs_obj['content']:
+        return None, None, None
+
+    first_token = logprobs_obj['content'][0]
+    if 'top_logprobs' not in first_token:
+        return None, None, None
+
+    valid_top_mass = 0.0
+    weighted_sum = 0.0
+    valid_values = 0
+
+    for logprob in first_token['top_logprobs']:
+        match = re.fullmatch(r'\s*(\d+)\s*', logprob.get('token', ''))
+        if not match:
+            continue
+
+        token_value = int(match.group(1))
+        if 0 <= token_value <= max_confidence:
+            token_prob = np.exp(logprob['logprob'])
+            valid_top_mass += token_prob
+            weighted_sum += token_value * token_prob
+            valid_values += 1
+
+    if valid_values == 0 or valid_top_mass <= 0:
+        return None, None, None
+
+    weighted_confidence = weighted_sum / valid_top_mass
+    omitted_or_invalid_mass = max(0.0, 1.0 - valid_top_mass)
+    error_bound = max_confidence * omitted_or_invalid_mass
+    return weighted_confidence, valid_top_mass, error_bound
+
 
 # Function to implement exponential backoff retry logic
 def retry_with_exponential_backoff(func, max_retries=10, initial_delay=60, 
@@ -216,7 +251,7 @@ def create_batch_requests(model_name, prompt_parts_list, rephrasings_list, is_re
                 else:
                     full_prompt = f"{rephrased_main} {confidence_format}"
                 
-                # For reasoning models, create multiple requests for averaging (only if not skipping logprobs)
+                # For reasoning models, create multiple requests only for a sampling-based binary-response proxy.
                 num_requests = REASONING_MODEL_RUNS if (is_reasoning_model and format_type == 'binary' and not SKIP_REASONING_MODEL_LOGPROBS) else 1
                 
                 for run_idx in range(num_requests):
@@ -403,6 +438,8 @@ def extract_results_from_batch(results_by_prompt, model_name, is_reasoning_model
         mapping_info = prompt_results['mapping_info']
         binary_results = prompt_results['binary_results']
         confidence_result = prompt_results['confidence_result']
+        confidence_topk_mass = None
+        confidence_error_bound = None
         
         # Check if we should skip this result due to missing binary results
         if not binary_results and not (is_reasoning_model and SKIP_REASONING_MODEL_LOGPROBS):
@@ -456,6 +493,8 @@ def extract_results_from_batch(results_by_prompt, model_name, is_reasoning_model
             confidence_value = None
             confidence_answer = ""
             weighted_confidence = None
+            confidence_topk_mass = None
+            confidence_error_bound = None
             
             if confidence_result:
                 confidence_answer = confidence_result['choices'][0]['message']['content'].strip()
@@ -501,29 +540,13 @@ def extract_results_from_batch(results_by_prompt, model_name, is_reasoning_model
                 except (AttributeError, ValueError):
                     pass
                 
-                # Calculate weighted confidence
+                # Calculate weighted confidence and the worst-case omitted-mass bound.
                 if 'choices' in confidence_result and confidence_result['choices']:
                     choice = confidence_result['choices'][0]
                     if 'logprobs' in choice and choice['logprobs']:
                         logprobs_obj = choice['logprobs']
-                        if 'content' in logprobs_obj and logprobs_obj['content']:
-                            total_prob = 0.0
-                            weighted_sum = 0.0
-                            
-                            for token_info in logprobs_obj['content']:
-                                if 'top_logprobs' in token_info:
-                                    for logprob in token_info['top_logprobs']:
-                                        try:
-                                            token_value = int(re.search(r'\b(\d+)\b', logprob['token']).group(1))
-                                            if 0 <= token_value <= 100:
-                                                token_prob = np.exp(logprob['logprob'])
-                                                weighted_sum += token_value * token_prob
-                                                total_prob += token_prob
-                                        except (AttributeError, ValueError):
-                                            continue
-                            
-                            if total_prob > 0:
-                                weighted_confidence = weighted_sum / total_prob
+                        metrics = calculate_confidence_topk_metrics(logprobs_obj)
+                        weighted_confidence, confidence_topk_mass, confidence_error_bound = metrics
         
         # Create result dictionary
         result_dict = {
@@ -541,7 +564,9 @@ def extract_results_from_batch(results_by_prompt, model_name, is_reasoning_model
             "Token_2_Prob": token_2_prob,
             "Odds_Ratio": odds_ratio,
             "Confidence Value": confidence_value,
-            "Weighted Confidence": weighted_confidence
+            "Weighted Confidence": weighted_confidence,
+            "Confidence Top-K Mass": confidence_topk_mass,
+            "Confidence Error Bound": confidence_error_bound
         }
         
         formatted_results.append(result_dict)
@@ -886,8 +911,8 @@ print("\nSubmitting rephrased prompts to all models using Batch API...")
 # 5. Download and process the results
 #
 # For reasoning models (o3, o4-mini, gpt-5), we can either:
-# 1. When SKIP_REASONING_MODEL_LOGPROBS=True (default): Only use confidence method (no logprob approximation)
-# 2. When SKIP_REASONING_MODEL_LOGPROBS=False: Create multiple requests to average results for logprob approximation
+# 1. When SKIP_REASONING_MODEL_LOGPROBS=True (default): Only use confidence method (no hidden-logprob proxy)
+# 2. When SKIP_REASONING_MODEL_LOGPROBS=False: Create multiple requests to average sampled binary responses
 
 # Extract prompt parts and rephrasings for batch processing
 prompt_parts_list = [parts for parts, _ in rephrasings_results]
@@ -966,7 +991,7 @@ df = pd.DataFrame(results)
 df.columns = ["Model", "Original Main Part", "Response Format", "Confidence Format", "Rephrased Main Part", 
               "Full Rephrased Prompt", "Full Confidence Prompt", "Model Response", "Model Confidence Response",
               "Log Probabilities", "Token_1_Prob", "Token_2_Prob", "Odds_Ratio", 
-              "Confidence Value", "Weighted Confidence"]
+              "Confidence Value", "Weighted Confidence", "Confidence Top-K Mass", "Confidence Error Bound"]
 
 # Convert log probabilities to strings to ensure they're stored properly
 df["Log Probabilities"] = df["Log Probabilities"].astype(str)

@@ -1,6 +1,9 @@
 """
-Visualize the random distribution of ground truth values from human survey data.
-This demonstrates what the random baseline distribution (N(0.619, 0.167)) looks like.
+Visualize the distribution of ground-truth values from human survey data.
+
+The script also reports per-question dispersion in human responses. It uses the
+same cleaned survey data used in the consolidated survey analysis and excludes
+attention-check questions from all outputs.
 """
 
 import numpy as np
@@ -15,66 +18,104 @@ import sys
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from survey_analysis_consolidated import load_cleaned_question_responses
 
 # Define data directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def load_human_survey_data():
-    """Load and combine human survey data from both parts."""
-    # Use a dictionary to collect all responses for each question
-    question_responses = {}
+def load_human_survey_data(return_details=False):
+    """Load cleaned human survey data from both survey waves."""
+    survey_files = [
+        os.path.join(DATA_DIR, 'word_meaning_survey_results.csv'),
+        os.path.join(DATA_DIR, 'word_meaning_survey_results_part_2.csv'),
+    ]
+    question_responses, exclusion_stats = load_cleaned_question_responses(survey_files)
 
-    # Load part 1 survey results (skip the first header row)
-    part1_survey_path = os.path.join(DATA_DIR, 'word_meaning_survey_results.csv')
-    if os.path.exists(part1_survey_path):
-        survey_df_part1 = pd.read_csv(part1_survey_path, skiprows=1)
+    rows = []
+    for question, raw_responses in question_responses.items():
+        responses = pd.Series(raw_responses, dtype=float).dropna()
+        if responses.empty:
+            continue
 
-        # Process all question columns from part 1
-        for col in survey_df_part1.columns:
-            if 'Left = No, Right = Yes' in col:
-                # Extract question from column name
-                parts = col.split(' - ')
-                if len(parts) >= 2:
-                    question = parts[-1].strip()
-                    if question.endswith('?'):
-                        # Get numeric values only (skip metadata rows)
-                        values = pd.to_numeric(survey_df_part1[col], errors='coerce')
-                        valid_values = values.dropna()
-                        if len(valid_values) > 0:
-                            # Convert 0-100 scale to 0-1 scale and store
-                            if question not in question_responses:
-                                question_responses[question] = []
-                            question_responses[question].extend((valid_values / 100.0).tolist())
+        response_id = f"Q{len(rows) + 1}"
+        rows.append({
+            'id': response_id,
+            'question': question,
+            'n': int(len(responses)),
+            'mean': float(responses.mean()),
+            'sd': float(responses.std(ddof=1)),
+            'median': float(responses.median()),
+            'iqr': float(responses.quantile(0.75) - responses.quantile(0.25)),
+            'pct_0_25': float((responses <= 25).mean() * 100),
+            'pct_26_50': float(((responses > 25) & (responses <= 50)).mean() * 100),
+            'pct_51_75': float(((responses > 50) & (responses <= 75)).mean() * 100),
+            'pct_76_100': float((responses > 75).mean() * 100),
+        })
 
-    # Load part 2 survey results (skip the first header row)
-    part2_survey_path = os.path.join(DATA_DIR, 'word_meaning_survey_results_part_2.csv')
-    if os.path.exists(part2_survey_path):
-        survey_df_part2 = pd.read_csv(part2_survey_path, skiprows=1)
+    distribution_df = pd.DataFrame(rows)
+    human_values = distribution_df['mean'].to_numpy() / 100.0
 
-        # Process all question columns from part 2
-        for col in survey_df_part2.columns:
-            if 'Left = No, Right = Yes' in col:
-                # Extract question from column name
-                parts = col.split(' - ')
-                if len(parts) >= 2:
-                    question = parts[-1].strip()
-                    if question.endswith('?'):
-                        # Get numeric values only (skip metadata rows)
-                        values = pd.to_numeric(survey_df_part2[col], errors='coerce')
-                        valid_values = values.dropna()
-                        if len(valid_values) > 0:
-                            # Convert 0-100 scale to 0-1 scale and store
-                            if question not in question_responses:
-                                question_responses[question] = []
-                            question_responses[question].extend((valid_values / 100.0).tolist())
+    if return_details:
+        return human_values, distribution_df, exclusion_stats
+    return human_values
 
-    # Calculate means for each question
-    all_human_values = []
-    for question, responses in question_responses.items():
-        if responses:
-            all_human_values.append(np.mean(responses))
+def latex_escape(value):
+    """Escape a string for LaTeX table output."""
+    replacements = {
+        '\\': r'\textbackslash{}',
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+    }
+    text = ''.join(replacements.get(char, char) for char in str(value))
+    return text.replace('“', '``').replace('”', "''").replace('’', "'")
 
-    return np.array(all_human_values)
+def save_distribution_table(distribution_df, csv_path, tex_path):
+    """Save per-question human response distributions as CSV and LaTeX."""
+    distribution_df.to_csv(csv_path, index=False)
+
+    lines = [
+        r'\begin{scriptsize}',
+        r'\setlength{\tabcolsep}{3pt}',
+        r'\begin{longtable}{lp{0.30\textwidth}rrrrrrr}',
+        r"\caption{Distribution of human survey responses by question. Responses are on a 0--100 scale, where 0 indicates ``No, definitely not'' and 100 indicates ``Yes, definitely.'' The four rightmost columns report the percentage of responses in each range.}",
+        r'\label{tab:human_response_distribution}\\',
+        r'\hline',
+        r'\textbf{ID} & \textbf{Question} & \textbf{N} & \textbf{Mean} & \textbf{SD} & \textbf{0--25} & \textbf{26--50} & \textbf{51--75} & \textbf{76--100} \\',
+        r'\hline',
+        r'\endfirsthead',
+        r'\caption[]{Distribution of human survey responses by question (continued).}\\',
+        r'\hline',
+        r'\textbf{ID} & \textbf{Question} & \textbf{N} & \textbf{Mean} & \textbf{SD} & \textbf{0--25} & \textbf{26--50} & \textbf{51--75} & \textbf{76--100} \\',
+        r'\hline',
+        r'\endhead',
+    ]
+
+    for _, row in distribution_df.iterrows():
+        lines.append(
+            f"{latex_escape(row['id'])} & {latex_escape(row['question'])} & "
+            f"{int(row['n'])} & {row['mean']:.1f} & {row['sd']:.1f} & "
+            f"{row['pct_0_25']:.0f} & {row['pct_26_50']:.0f} & "
+            f"{row['pct_51_75']:.0f} & {row['pct_76_100']:.0f} \\\\"
+        )
+
+    lines.extend([
+        r'\hline',
+        r'\end{longtable}',
+        r'\end{scriptsize}',
+    ])
+
+    with open(tex_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines) + '\n')
 
 def create_ground_truth_visualization(human_values, save_path='ground_truth_distribution.png'):
     """Create visualization showing the distribution of human ground truth values."""
@@ -206,13 +247,14 @@ def main():
 
     # Load human survey data
     print("\nLoading human survey data...")
-    human_values = load_human_survey_data()
+    human_values, distribution_df, exclusion_stats = load_human_survey_data(return_details=True)
 
     if len(human_values) == 0:
         print("ERROR: No human survey data found!")
         return
 
     print(f"Loaded {len(human_values)} human ground truth values")
+    print(f"Final cleaned respondent count: {exclusion_stats['final_count']}")
 
     # Calculate and display statistics
     mean_val = np.mean(human_values)
@@ -228,17 +270,34 @@ def main():
 
     # Create detailed two-panel visualization
     mean1, std1 = create_ground_truth_visualization(human_values,
-                                                    'ground_truth_distribution.png')
+                                                    os.path.join(OUTPUT_DIR, 'ground_truth_distribution.png'))
     print("  Saved detailed visualization to ground_truth_distribution.png")
 
     # Create simplified single-panel visualization (better for paper)
     mean2, std2 = create_simplified_visualization(human_values,
-                                                  'ground_truth_distribution_simple.png')
+                                                  os.path.join(OUTPUT_DIR, 'ground_truth_distribution_simple.png'))
     print("  Saved simplified visualization to ground_truth_distribution_simple.png")
+
+    # Save per-question distribution table
+    save_distribution_table(
+        distribution_df,
+        os.path.join(OUTPUT_DIR, 'human_response_distribution.csv'),
+        os.path.join(OUTPUT_DIR, 'human_response_distribution_table.tex')
+    )
+    print("  Saved per-question distribution CSV to human_response_distribution.csv")
+    print("  Saved per-question distribution table to human_response_distribution_table.tex")
+
+    high_dispersion = int((distribution_df['sd'] >= 30).sum())
+    bimodal_proxy = int((
+        (distribution_df['pct_0_25'] >= 25) &
+        (distribution_df['pct_76_100'] >= 25) &
+        ((distribution_df['pct_26_50'] + distribution_df['pct_51_75']) <= 50)
+    ).sum())
 
     # Save statistics to JSON for reference
     stats_dict = {
         'n_questions': len(human_values),
+        'n_cleaned_respondents': int(exclusion_stats['final_count']),
         'mean': float(mean_val),
         'std': float(std_val),
         'mean_pct': float(mean_val * 100),
@@ -246,21 +305,31 @@ def main():
         'min': float(np.min(human_values)),
         'max': float(np.max(human_values)),
         'median': float(np.median(human_values)),
-        'description': 'Human ground truth distribution statistics for random baseline'
+        'mean_question_sd_pct': float(distribution_df['sd'].mean()),
+        'median_question_sd_pct': float(distribution_df['sd'].median()),
+        'questions_with_sd_at_least_30': high_dispersion,
+        'bimodal_proxy_questions': bimodal_proxy,
+        'description': 'Human ground-truth distribution used for the Normal baseline'
     }
 
-    with open('ground_truth_statistics.json', 'w') as f:
+    statistics_path = os.path.join(OUTPUT_DIR, 'ground_truth_statistics.json')
+    with open(statistics_path, 'w', encoding='utf-8') as f:
         json.dump(stats_dict, f, indent=2)
     print("\n  Saved statistics to ground_truth_statistics.json")
 
     print("\n" + "="*60)
     print("VISUALIZATION COMPLETE")
     print("="*60)
-    print("\nThe random baseline is drawn from:")
+    print("\nThe Normal baseline is parameterized from:")
     print(f"  N({mean_val*100:.1f}, {std_val*100:.1f}) in percentage scale")
     print(f"  N({mean_val:.3f}, {std_val:.3f}) in 0-1 scale")
     print("\nThis distribution represents the empirical distribution of human")
     print("ground truth values across all survey questions.")
+    print("\nPer-question response dispersion:")
+    print(f"  Mean question-level SD: {distribution_df['sd'].mean():.1f} points")
+    print(f"  Median question-level SD: {distribution_df['sd'].median():.1f} points")
+    print(f"  Questions with SD >= 30 points: {high_dispersion}")
+    print(f"  Questions meeting bimodality proxy: {bimodal_proxy}")
 
 if __name__ == "__main__":
     main()

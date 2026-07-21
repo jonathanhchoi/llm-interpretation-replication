@@ -1,0 +1,34 @@
+{
+  "model_snapshots": {
+    "gpt": "gpt-4.1-2025-04-14",
+    "gemini": "gemini-2.5-pro",
+    "claude": "claude-opus-4-1-20250805"
+  },
+  "model_score_fields": {
+    "gpt": "gpt_weighted_confidence",
+    "gemini": "gemini_confidence",
+    "claude": "claude_confidence"
+  },
+  "n_substantive_questions": 100,
+  "human_sample": {
+    "duration_excluded": 0,
+    "median_duration": 75.0,
+    "min_duration_threshold": 15.0,
+    "identical_excluded": 9,
+    "attention_failed": 115,
+    "final_count": 884,
+    "total_excluded": 124,
+    "raw_count": 1008,
+    "consent_excluded": 0,
+    "eligible_count": 1008,
+    "n_substantive_questions": 100
+  },
+  "bootstrap_resamples": 10000,
+  "valid_binary_responses": {
+    "gpt": 100,
+    "gemini": 99,
+    "claude": 100
+  },
+  "normal_baseline": "Leave-one-out expected error from a Normal distribution clipped to [0, 1]",
+  "result_mode": "checked_in_results"
+}

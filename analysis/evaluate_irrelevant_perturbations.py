@@ -570,8 +570,8 @@ def analyze_results(results_df: pd.DataFrame) -> Dict:
                 "mean_all_confidence": all_confidences.mean(),
                 "std_all_confidence": all_confidences.std(),
                 "median_all_confidence": all_confidences.median(),
-                "ci_lower_95": np.percentile(all_confidences, 2.5),
-                "ci_upper_95": np.percentile(all_confidences, 97.5),
+                "interval_lower_95": np.percentile(all_confidences, 2.5),
+                "interval_upper_95": np.percentile(all_confidences, 97.5),
                 "min_confidence": all_confidences.min(),
                 "max_confidence": all_confidences.max(),
                 "n_samples": len(all_confidences)
@@ -585,8 +585,8 @@ def analyze_results(results_df: pd.DataFrame) -> Dict:
                         "mean_perturbed_confidence": perturbed_confidences.mean(),
                         "std_perturbed_confidence": perturbed_confidences.std(),
                         "median_perturbed_confidence": perturbed_confidences.median(),
-                        "perturbed_ci_lower_95": np.percentile(perturbed_confidences, 2.5),
-                        "perturbed_ci_upper_95": np.percentile(perturbed_confidences, 97.5)
+                        "perturbed_interval_lower_95": np.percentile(perturbed_confidences, 2.5),
+                        "perturbed_interval_upper_95": np.percentile(perturbed_confidences, 97.5)
                     })
 
             # Position-based analysis (by position index)
@@ -642,8 +642,8 @@ def save_results(all_results: List[Dict], analysis: Dict, output_dir: str):
                 "mean_all_confidence": conf_stats.get("mean_all_confidence"),
                 "std_all_confidence": conf_stats.get("std_all_confidence"),
                 "median_all_confidence": conf_stats.get("median_all_confidence"),
-                "ci_lower_95": conf_stats.get("ci_lower_95"),
-                "ci_upper_95": conf_stats.get("ci_upper_95"),
+                "interval_lower_95": conf_stats.get("interval_lower_95"),
+                "interval_upper_95": conf_stats.get("interval_upper_95"),
                 "n_samples": conf_stats.get("n_samples"),
                 "mean_perturbed_confidence": conf_stats.get("mean_perturbed_confidence"),
                 "std_perturbed_confidence": conf_stats.get("std_perturbed_confidence"),
@@ -744,7 +744,7 @@ def save_results(all_results: List[Dict], analysis: Dict, output_dir: str):
                 f.write(f"    Mean (all): {conf_stats.get('mean_all_confidence', 0):.1f}\n")
                 f.write(f"    Std Dev (all): {conf_stats.get('std_all_confidence', 0):.1f}\n")
                 f.write(f"    Median (all): {conf_stats.get('median_all_confidence', 0):.1f}\n")
-                f.write(f"    95% CI: [{conf_stats.get('ci_lower_95', 0):.1f}, {conf_stats.get('ci_upper_95', 0):.1f}]\n")
+                f.write(f"    95% output interval: [{conf_stats.get('interval_lower_95', 0):.1f}, {conf_stats.get('interval_upper_95', 0):.1f}]\n")
 
                 if 'mean_perturbed_confidence' in conf_stats:
                     f.write(f"    Mean (perturbed only): {conf_stats.get('mean_perturbed_confidence', 0):.1f}\n")
@@ -806,7 +806,7 @@ def create_violin_plots(analysis: Dict, output_dir: str):
     This creates a stacked visualization matching the format of three_model_stacked_visualization.png:
     - 3 vertically stacked subplots (one per model: GPT, Claude, Gemini)
     - Each subplot shows scenarios as numbered points on x-axis
-    - Violin plots with jittered points, mean, and 95% CI error bars
+    - Violin plots with jittered points, mean, and descriptive 95% output-interval bars
     - Consistent color scheme per scenario
     """
 
@@ -896,7 +896,7 @@ def create_violin_plots(analysis: Dict, output_dir: str):
                         # Add mean point (black dot, matching original)
                         ax.scatter(plot_position, mean_conf, color='black', s=80, zorder=5)
 
-                        # Add error bars for 95% CI (matching original style)
+                        # Add bars for the descriptive 95% output interval (matching original style)
                         ax.plot([plot_position, plot_position], [lower_percentile, upper_percentile],
                                color='black', linewidth=2, zorder=4)
 

@@ -144,6 +144,55 @@ def extract_question_text(survey_df_raw, filepaths):
 
     return question_mapping
 
+
+def load_cleaned_question_responses(filepaths, require_consent=False):
+    """Return substantive question responses after the paper's exclusions.
+
+    This is the canonical cleaning path for analyses that compare model scores
+    with the human survey. It applies the preregistered duration,
+    straight-line, and attention-check criteria and omits attention-check items
+    from the returned question mapping. The paper's reported N=884 follows
+    those three criteria; require_consent=True is available for a stricter
+    sensitivity check and yields a different analysis sample.
+
+    Returns:
+        tuple: (question_responses, exclusion_stats). Responses remain on
+        the original 0--100 survey scale.
+    """
+    survey_df, question_cols = load_and_clean_survey_data(filepaths)
+    raw_count = len(survey_df)
+
+    consent_excluded = 0
+    if require_consent and 'Consent question' in survey_df.columns:
+        consent_mask = survey_df['Consent question'].notna()
+        consent_excluded = int((~consent_mask).sum())
+        survey_df = survey_df.loc[consent_mask].copy()
+
+    survey_clean, exclusion_stats = apply_exclusion_criteria(survey_df, question_cols)
+    question_mapping = extract_question_text(survey_clean, filepaths)
+
+    question_responses = {}
+    for col in question_cols:
+        if col.endswith('_8'):
+            continue
+
+        question = question_mapping.get(col)
+        if not question:
+            continue
+
+        values = pd.to_numeric(survey_clean[col], errors='coerce').dropna().tolist()
+        if values:
+            question_responses.setdefault(question, []).extend(values)
+
+    exclusion_stats = dict(exclusion_stats)
+    exclusion_stats.update({
+        'raw_count': raw_count,
+        'consent_excluded': consent_excluded,
+        'eligible_count': raw_count - consent_excluded,
+        'n_substantive_questions': len(question_responses),
+    })
+    return question_responses, exclusion_stats
+
 def match_survey_to_llm_questions(survey_df, llm_df, survey_filepaths=None):
     """Match survey questions to LLM prompts.
 
