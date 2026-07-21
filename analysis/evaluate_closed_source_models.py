@@ -1,20 +1,26 @@
 """
 Evaluation of Closed-Source LLMs on Ordinary Meaning Questions
-Analyzes GPT-4.1, Gemini, and Claude Opus 4.1 on 50 questions about ordinary meaning
-Measures both relative probabilities (where available) and verbalized confidence
+Analyzes GPT-4.1 (gpt-4.1-2025-04-14), Gemini 2.5 Pro, and Claude Opus 4.1 on 100
+questions about ordinary meaning. GPT-4.1 exposes final-answer log probabilities,
+which are used for weighted confidence; Gemini 2.5 Pro and Claude Opus 4.1 do not
+(Google rejects response_logprobs requests for gemini-2.5-pro), so those two models
+are evaluated on their stated numerical confidence from a single temperature-0 query.
 """
 
+import argparse
 import os
+import sys
 import time
 import json
 import pandas as pd
 import numpy as np
 from scipy import stats
+from scipy.integrate import quad
 from scipy.stats import pearsonr, bootstrap
 import openai
 import google.generativeai as genai
 from anthropic import Anthropic
-from config import OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY
+from dotenv import load_dotenv
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,17 +29,29 @@ import random
 # Get the base directory for the project (parent of analysis folder)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SCRIPT_DIR)
+SURVEY_ANALYSIS_DIR = os.path.join(BASE_DIR, "survey_analysis")
+if SURVEY_ANALYSIS_DIR not in sys.path:
+    sys.path.append(SURVEY_ANALYSIS_DIR)
+
+from survey_analysis_consolidated import load_cleaned_question_responses
+
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # Model configurations
-GPT_MODEL = "gpt-4-0125-preview"  # GPT-4.1
-GEMINI_MODEL = "gemini-2.0-flash-exp"  # Latest Gemini with logprobs
+GPT_MODEL = "gpt-4.1-2025-04-14"  # GPT-4.1
+GEMINI_MODEL = "gemini-2.5-pro"  # Gemini 2.5 Pro (no logprob access; stated confidence only)
 CLAUDE_MODEL = "claude-opus-4-1-20250805"  # Claude Opus 4.1
 
-# Initialize API clients
-openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel(GEMINI_MODEL)
-anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+# Initialize clients only when credentials exist so checked-in results can be
+# reanalyzed offline.
+openai_client = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+gemini_model = genai.GenerativeModel(GEMINI_MODEL) if GEMINI_API_KEY else None
+anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 
 # Rate limiting configuration
 GPT_DELAY = 0.5  # seconds between GPT API calls
@@ -45,118 +63,100 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "results", "closed_source_evaluation")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Caching configuration
-CACHE_FILE = os.path.join(OUTPUT_DIR, "api_cache.json")
+CACHE_FILE = os.path.join(OUTPUT_DIR, "api_cache_rerun_2026.json")
 USE_CACHE = True  # Set to False to force fresh API calls
 
+SURVEY_FILES = [
+    os.path.join(BASE_DIR, "data", "word_meaning_survey_results.csv"),
+    os.path.join(BASE_DIR, "data", "word_meaning_survey_results_part_2.csv"),
+]
+
 def load_ordinary_meaning_questions():
-    """Load all ordinary meaning questions from both parts of the dataset."""
-    questions = []
-
-    # Load part 1 questions (first 50)
-    part1_path = os.path.join(BASE_DIR, "data", "instruct_model_comparison_results.csv")
-    df_part1 = pd.read_csv(part1_path)
-    questions_part1 = df_part1['prompt'].unique()[:50]  # Get first 50 unique questions
-    questions.extend(questions_part1)
-
-    # Load part 2 questions - extract from the actual survey results
-    # since question_list_part_2.txt contains duplicate questions
-    part2_path = os.path.join(BASE_DIR, "data", "word_meaning_survey_results_part_2.csv")
-    survey_df_part2 = pd.read_csv(part2_path, skiprows=1)
-    questions_part2 = []
-
-    # Extract questions from column headers
-    for col in survey_df_part2.columns:
-        if 'Left = No, Right = Yes' in col:
-            parts = col.split(' - ')
-            if len(parts) >= 2:
-                question = parts[-1].strip()
-                if question.endswith('?') and question not in questions_part2:
-                    questions_part2.append(question)
-
-    # Take the first 50 unique questions from part 2 (there are 55 total)
-    questions.extend(questions_part2[:50])
-
-    print(f"Loaded {len(questions_part1)} questions from part 1 and {len(questions_part2[:50])} questions from part 2")
-    print(f"Total questions: {len(questions)}")
-    return list(questions)
+    """Load the 100 substantive survey questions, excluding attention checks."""
+    question_responses, exclusion_stats = load_cleaned_question_responses(SURVEY_FILES)
+    questions = list(question_responses)
+    if len(questions) != 100:
+        raise ValueError(f"Expected 100 substantive questions, found {len(questions)}")
+    print(
+        f"Loaded {len(questions)} substantive questions "
+        f"(cleaned survey N={exclusion_stats['final_count']})"
+    )
+    return questions
 
 def load_human_survey_data(return_full_data=False):
-    """Load and process human survey data for comparison from both parts.
+    """Load the paper's cleaned N=884 human benchmark on a 0--1 scale."""
+    raw_responses, exclusion_stats = load_cleaned_question_responses(SURVEY_FILES)
+    full_responses = {
+        question: (np.asarray(responses, dtype=float) / 100.0).tolist()
+        for question, responses in raw_responses.items()
+    }
+    human_data = {
+        question: float(np.mean(responses))
+        for question, responses in full_responses.items()
+    }
 
-    This function now properly combines responses from both survey parts.
-    For questions that appear in both parts, it pools all responses together
-    before calculating statistics.
-
-    Args:
-        return_full_data: If True, returns both aggregated means and full response distributions
-
-    Returns:
-        If return_full_data is False: Dictionary of question -> mean response (0-1 scale)
-        If return_full_data is True: Tuple of (means_dict, full_responses_dict)
-    """
-    # Use a dictionary to collect all responses for each question
-    question_responses = {}
-
-    # Load part 1 survey results (skip the first header row)
-    part1_survey_path = os.path.join(BASE_DIR, "data", "word_meaning_survey_results.csv")
-    survey_df_part1 = pd.read_csv(part1_survey_path, skiprows=1)
-
-    # Process all question columns from part 1
-    for col in survey_df_part1.columns:
-        if 'Left = No, Right = Yes' in col:
-            # Extract question from column name
-            parts = col.split(' - ')
-            if len(parts) >= 2:
-                question = parts[-1].strip()
-                if question.endswith('?'):
-                    # Get numeric values only (skip metadata rows)
-                    values = pd.to_numeric(survey_df_part1[col], errors='coerce')
-                    valid_values = values.dropna()
-                    if len(valid_values) > 0:
-                        # Convert 0-100 scale to 0-1 scale and store
-                        if question not in question_responses:
-                            question_responses[question] = []
-                        question_responses[question].extend((valid_values / 100.0).tolist())
-
-    # Load part 2 survey results (skip the first header row)
-    part2_survey_path = os.path.join(BASE_DIR, "data", "word_meaning_survey_results_part_2.csv")
-    survey_df_part2 = pd.read_csv(part2_survey_path, skiprows=1)
-
-    # Process all question columns from part 2
-    for col in survey_df_part2.columns:
-        if 'Left = No, Right = Yes' in col:
-            # Extract question from column name
-            parts = col.split(' - ')
-            if len(parts) >= 2:
-                question = parts[-1].strip()
-                if question.endswith('?'):
-                    # Get numeric values only (skip metadata rows)
-                    values = pd.to_numeric(survey_df_part2[col], errors='coerce')
-                    valid_values = values.dropna()
-                    if len(valid_values) > 0:
-                        # Convert 0-100 scale to 0-1 scale and add to existing responses
-                        if question not in question_responses:
-                            question_responses[question] = []
-                        question_responses[question].extend((valid_values / 100.0).tolist())
-
-    # Calculate means from combined responses
-    human_data = {}
-    full_responses = {} if return_full_data else None
-
-    for question, responses in question_responses.items():
-        human_data[question] = np.mean(responses)
-        if return_full_data:
-            full_responses[question] = responses
-
-    print(f"Loaded human survey data for {len(human_data)} questions total")
-
-    # Print sample sizes for verification
-    sample_sizes = [len(responses) for responses in question_responses.values()]
-    print(f"Response counts per question - Min: {min(sample_sizes)}, Max: {max(sample_sizes)}, Mean: {np.mean(sample_sizes):.1f}")
+    sample_sizes = [len(responses) for responses in full_responses.values()]
+    print(
+        f"Loaded cleaned human data for {len(human_data)} substantive questions "
+        f"(N={exclusion_stats['final_count']}; responses/question "
+        f"{min(sample_sizes)}-{max(sample_sizes)}, mean={np.mean(sample_sizes):.1f})"
+    )
 
     if return_full_data:
-        return human_data, full_responses
+        return human_data, full_responses, exclusion_stats
     return human_data
+
+
+def canonicalize_question(question):
+    """Normalize harmless typography differences before joining question sets."""
+    return " ".join(
+        str(question)
+        .replace(chr(0x201C), '"')
+        .replace(chr(0x201D), '"')
+        .replace(chr(0x2018), "'")
+        .replace(chr(0x2019), "'")
+        .replace(chr(0x00A0), " ")
+        .replace("“", '"')
+        .replace("”", '"')
+        .replace("’", "'")
+        .split()
+    ).casefold()
+
+
+def build_human_lookup(human_data):
+    """Build a unique normalized question-to-value mapping."""
+    lookup = {}
+    for question, value in human_data.items():
+        key = canonicalize_question(question)
+        if key in lookup:
+            raise ValueError(f"Duplicate normalized human question: {question}")
+        lookup[key] = value
+    return lookup
+
+
+def normalize_binary_response(value):
+    """Map common model Yes/No response variants to a comparable label."""
+    match = str(value).strip().rstrip(".!").casefold()
+    if match.startswith("yes"):
+        return "yes"
+    if match.startswith("no"):
+        return "no"
+    return None
+
+
+def binary_agreement_rate(first, second):
+    """Return agreement and N among rows with valid Yes/No responses for both."""
+    first_normalized = first.map(normalize_binary_response)
+    second_normalized = second.map(normalize_binary_response)
+    valid = (
+        first_normalized.isin({"yes", "no"})
+        & second_normalized.isin({"yes", "no"})
+    )
+    if not valid.any():
+        return float("nan"), 0
+    return float(
+        (first_normalized.loc[valid] == second_normalized.loc[valid]).mean()
+    ), int(valid.sum())
 
 def evaluate_gpt(prompt, binary_format=True):
     """
@@ -189,9 +189,10 @@ def evaluate_gpt(prompt, binary_format=True):
             if response.choices[0].logprobs and response.choices[0].logprobs.content:
                 first_token_data = response.choices[0].logprobs.content[0]
                 for logprob_item in first_token_data.top_logprobs:
-                    if logprob_item.token.lower() in ['yes', 'y']:
+                    token = logprob_item.token.strip().lower()
+                    if token in ['yes', 'y']:
                         token_1_prob = np.exp(logprob_item.logprob)
-                    elif logprob_item.token.lower() in ['no', 'n']:
+                    elif token in ['no', 'n']:
                         token_2_prob = np.exp(logprob_item.logprob)
 
             return response_text, token_1_prob, token_2_prob, None, None
@@ -267,12 +268,15 @@ def evaluate_gemini(prompt, binary_format=True):
     Returns:
         tuple: (response_text, token_1_prob, token_2_prob, confidence_value, weighted_confidence)
     """
+    # NOTE: Google's API rejects response_logprobs requests for gemini-2.5-pro
+    # ("Logprobs is not enabled for models/gemini-2.5-pro", verified July 2026,
+    # on both the standard and batch endpoints), so this function relies on the
+    # model's stated output alone, parallel to the Claude treatment. The larger
+    # max_output_tokens accommodates the model's hidden reasoning tokens.
     try:
         generation_config = {
             "temperature": 0.0,
-            "max_output_tokens": 10,
-            "response_logprobs": True,
-            "logprobs": 19  # Maximum allowed
+            "max_output_tokens": 4096,
         }
 
         if binary_format:
@@ -288,37 +292,19 @@ def evaluate_gemini(prompt, binary_format=True):
         response_text = response.text.strip() if response.text else ""
 
         if binary_format:
-            # Extract token probabilities for Yes/No
-            token_1_prob = 0.0
-            token_2_prob = 0.0
-
-            if hasattr(response, 'candidates') and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'logprobs_result') and candidate.logprobs_result:
-                    if hasattr(candidate.logprobs_result, 'top_candidates'):
-                        first_position = candidate.logprobs_result.top_candidates[0]
-                        for cand in first_position.candidates:
-                            if cand.token.lower() in ['yes', 'y']:
-                                token_1_prob = np.exp(cand.log_probability)
-                            elif cand.token.lower() in ['no', 'n']:
-                                token_2_prob = np.exp(cand.log_probability)
-
-            return response_text, token_1_prob, token_2_prob, None, None
+            # Token probabilities are unavailable for gemini-2.5-pro; store zeros
+            # (the downstream assembly then records relative_prob = 0.5, unused).
+            return response_text, 0.0, 0.0, None, None
         else:
-            # Extract confidence value
+            # Extract stated confidence value
             try:
                 confidence_value = int(''.join(filter(str.isdigit, response_text)))
             except:
                 confidence_value = None
 
-            # Calculate weighted confidence from logprobs
-            weighted_confidence = None
-            if hasattr(response, 'candidates') and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'logprobs_result'):
-                    weighted_confidence = calculate_weighted_confidence_gemini(candidate.logprobs_result)
-
-            return response_text, None, None, confidence_value, weighted_confidence
+            # No logprobs available: weighted confidence is undefined; the
+            # comparison code falls back to the stated confidence value.
+            return response_text, None, None, confidence_value, None
 
     except Exception as e:
         print(f"Error with Gemini evaluation: {e}")
@@ -580,9 +566,9 @@ def is_cached_result_complete(cached_result):
     # Core model fields that must be present
     required_fields = [
         'gpt_response', 'gpt_yes_prob', 'gpt_no_prob', 'gpt_confidence', 'gpt_weighted_confidence',
-        'gemini_response', 'gemini_yes_prob', 'gemini_no_prob', 'gemini_confidence', 'gemini_weighted_confidence',
+        'gemini_response', 'gemini_yes_prob', 'gemini_no_prob', 'gemini_confidence',
         'claude_response', 'claude_confidence'
-    ]
+    ]  # gemini_weighted_confidence intentionally omitted: undefined for gemini-2.5-pro (no logprob access)
 
     for field in required_fields:
         if field not in cached_result or cached_result[field] is None:
@@ -789,28 +775,26 @@ def calculate_correlations(df):
     """Calculate correlations between models."""
     correlations = {}
 
-    # Relative probability correlations (GPT vs Gemini only, since Claude doesn't have logprobs)
-    if 'gpt_relative_prob' in df.columns and 'gemini_relative_prob' in df.columns:
-        corr, p_value = pearsonr(df['gpt_relative_prob'].fillna(0.5),
-                                 df['gemini_relative_prob'].fillna(0.5))
-        correlations['gpt_gemini_relative_prob'] = {'correlation': corr, 'p_value': p_value}
-
-    # Weighted confidence correlations
+    # GPT exposes weighted final-answer confidence; Gemini and Claude expose
+    # stated confidence only. Do not synthesize unavailable Gemini logprobs.
     pairs = [
-        ('gpt_weighted_confidence', 'gemini_weighted_confidence'),
-        ('gpt_weighted_confidence', 'claude_confidence'),
-        ('gemini_weighted_confidence', 'claude_confidence')
+        ('gpt_weighted_confidence', 'gemini_confidence', 'gpt_gemini_confidence'),
+        ('gpt_weighted_confidence', 'claude_confidence', 'gpt_claude_confidence'),
+        ('gemini_confidence', 'claude_confidence', 'gemini_claude_confidence'),
     ]
 
-    for col1, col2 in pairs:
+    for col1, col2, label in pairs:
         if col1 in df.columns and col2 in df.columns:
-            # Convert to 0-1 scale for comparison
-            vals1 = df[col1].fillna(50) / 100
-            vals2 = df[col2].fillna(50) / 100
+            paired = df[[col1, col2]].apply(pd.to_numeric, errors='coerce').dropna()
+            if len(paired) < 2 or paired[col1].nunique() < 2 or paired[col2].nunique() < 2:
+                continue
+            vals1 = paired[col1] / 100
+            vals2 = paired[col2] / 100
             corr, p_value = pearsonr(vals1, vals2)
-            correlations[f"{col1.split('_')[0]}_{col2.split('_')[0]}_confidence"] = {
-                'correlation': corr,
-                'p_value': p_value
+            correlations[label] = {
+                'correlation': float(corr),
+                'p_value': float(p_value),
+                'n': int(len(paired)),
             }
 
     return correlations
@@ -848,6 +832,47 @@ def bootstrap_mae(values, n_bootstrap=10000, confidence_level=0.95, seed=42):
     ci_upper = res.confidence_interval.high
 
     return mean_mae, ci_lower, ci_upper
+
+def binary_cross_entropy(prediction, target, eps=1e-15):
+    """Binary cross entropy for a probabilistic prediction and fractional target."""
+    p = np.clip(prediction, eps, 1 - eps)
+    y = np.clip(target, 0.0, 1.0)
+    return -(y * np.log(p) + (1 - y) * np.log(1 - p))
+
+def clipped_normal_expected_log_loss(target, mean, std, lower=0.0, upper=1.0, eps=1e-15):
+    """Expected binary cross entropy for a normal draw clipped to [lower, upper]."""
+    if std <= 0:
+        return binary_cross_entropy(np.clip(mean, lower, upper), target, eps=eps)
+
+    target = np.clip(target, lower, upper)
+    z_lower = (lower - mean) / std
+    z_upper = (upper - mean) / std
+    p_below = stats.norm.cdf(z_lower)
+    p_above = 1 - stats.norm.cdf(z_upper)
+
+    def integrand(x):
+        return binary_cross_entropy(np.clip(x, lower, upper), target, eps=eps) * stats.norm.pdf(x, mean, std)
+
+    integral, _ = quad(integrand, lower, upper)
+    return binary_cross_entropy(lower, target, eps=eps) * p_below + integral + binary_cross_entropy(upper, target, eps=eps) * p_above
+
+def normal_baseline_expected_log_losses(target_values, reference_values):
+    """Expected clipped-normal log loss using leave-one-out reference moments."""
+    losses = []
+    reference_array = np.array(reference_values)
+
+    for target in target_values:
+        matches = np.where(np.isclose(reference_array, target))[0]
+        if len(reference_array) > 1 and len(matches) > 0:
+            reference_sample = np.delete(reference_array, matches[0])
+        else:
+            reference_sample = reference_array
+
+        mean = np.mean(reference_sample)
+        std = np.std(reference_sample)
+        losses.append(clipped_normal_expected_log_loss(target, mean, std))
+
+    return losses
 
 def bootstrap_mae_difference(model_values, baseline_values, n_bootstrap=10000, confidence_level=0.95, seed=42):
     """Calculate bootstrapped confidence intervals and p-value for the difference between model MAE and baseline MAE.
@@ -914,6 +939,44 @@ def bootstrap_mae_difference(model_values, baseline_values, n_bootstrap=10000, c
 
     return observed_diff, ci_lower, ci_upper, p_value
 
+def clipped_normal_expected_abs_error(target, mean, std, lower=0.0, upper=1.0):
+    """Expected absolute error between target and a normal draw clipped to [lower, upper]."""
+    if std <= 0:
+        return abs(np.clip(mean, lower, upper) - target)
+
+    target = np.clip(target, lower, upper)
+    z_lower = (lower - mean) / std
+    z_target = (target - mean) / std
+    z_upper = (upper - mean) / std
+
+    p_below = stats.norm.cdf(z_lower)
+    p_above = 1 - stats.norm.cdf(z_upper)
+
+    p_left = stats.norm.cdf(z_target) - stats.norm.cdf(z_lower)
+    p_right = stats.norm.cdf(z_upper) - stats.norm.cdf(z_target)
+    ex_left = mean * p_left + std * (stats.norm.pdf(z_lower) - stats.norm.pdf(z_target))
+    ex_right = mean * p_right + std * (stats.norm.pdf(z_target) - stats.norm.pdf(z_upper))
+
+    return target * p_below + (target * p_left - ex_left) + (ex_right - target * p_right) + (upper - target) * p_above
+
+def normal_baseline_expected_errors(target_values, reference_values):
+    """Expected clipped-normal errors using leave-one-out reference moments."""
+    errors = []
+    reference_array = np.array(reference_values)
+
+    for target in target_values:
+        matches = np.where(np.isclose(reference_array, target))[0]
+        if len(reference_array) > 1 and len(matches) > 0:
+            reference_sample = np.delete(reference_array, matches[0])
+        else:
+            reference_sample = reference_array
+
+        mean = np.mean(reference_sample)
+        std = np.std(reference_sample)
+        errors.append(clipped_normal_expected_abs_error(target, mean, std))
+
+    return errors
+
 def calculate_baseline_performance(model_df, human_data):
     """Calculate baseline performance metrics for key baselines only.
 
@@ -924,7 +987,7 @@ def calculate_baseline_performance(model_df, human_data):
     Returns:
         dict: Contains MAE for:
             - 'always_50': Model that always predicts 50%
-            - 'normal_human': Normal distribution using human mean and std
+            - 'normal_human': Expected clipped normal error using human mean and std
     """
     baselines = {}
 
@@ -941,40 +1004,43 @@ def calculate_baseline_performance(model_df, human_data):
 
     # Baseline 1: Always predict 50%
     mae_always_50 = []
+    log_loss_always_50 = []
     for human_val in human_values:
         mae_always_50.append(abs(0.5 - human_val))
+        log_loss_always_50.append(binary_cross_entropy(0.5, human_val))
 
-    # Calculate bootstrapped confidence intervals for MAE
+    # Calculate bootstrapped confidence intervals for MAE and log loss
     mae_mean, mae_ci_lower, mae_ci_upper = bootstrap_mae(mae_always_50)
+    log_loss_mean, log_loss_ci_lower, log_loss_ci_upper = bootstrap_mae(log_loss_always_50)
 
     baselines['always_50'] = {
         'mae': mae_mean,
         'std': np.std(mae_always_50),
         'mae_ci_lower': mae_ci_lower,
         'mae_ci_upper': mae_ci_upper,
+        'log_loss': log_loss_mean,
+        'log_loss_ci_lower': log_loss_ci_lower,
+        'log_loss_ci_upper': log_loss_ci_upper,
         'description': 'Always 50%'
     }
 
-    # Baseline 2: Normal distribution using human mean and std
-    mae_normal_human = []
-    np.random.seed(43)  # For reproducibility
-    for human_val in human_values:
-        # Generate prediction from normal distribution with human parameters
-        # Convert human mean/std from 0-1 scale to 0-100 scale for sampling
-        normal_value = np.random.normal(human_mean * 100, human_std * 100)
-        # Clip to [0, 100] range and convert back to 0-1 scale
-        normal_value = np.clip(normal_value, 0, 100) / 100.0
-        mae = abs(normal_value - human_val)
-        mae_normal_human.append(mae)
+    # Baseline 2: Expected absolute error from a clipped normal distribution
+    # with the empirical human mean and standard deviation.
+    mae_normal_human = normal_baseline_expected_errors(human_values, human_values)
+    log_loss_normal_human = normal_baseline_expected_log_losses(human_values, human_values)
 
     # Calculate bootstrapped confidence intervals
     mae_mean, mae_ci_lower, mae_ci_upper = bootstrap_mae(mae_normal_human)
+    log_loss_mean, log_loss_ci_lower, log_loss_ci_upper = bootstrap_mae(log_loss_normal_human)
 
     baselines['normal_human'] = {
         'mae': mae_mean,
         'std': np.std(mae_normal_human),
         'mae_ci_lower': mae_ci_lower,
         'mae_ci_upper': mae_ci_upper,
+        'log_loss': log_loss_mean,
+        'log_loss_ci_lower': log_loss_ci_lower,
+        'log_loss_ci_upper': log_loss_ci_upper,
         'human_mean': human_mean * 100,  # Store in percentage scale for display
         'human_std': human_std * 100,     # Store in percentage scale for display
         'description': f'N({human_mean*100:.0f}, {human_std*100:.0f})'
@@ -1001,23 +1067,19 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
 
     # Get human values for baseline calculations
     human_values = list(human_data.values())
+    human_lookup = build_human_lookup(human_data)
 
     # Match questions and calculate MAE for each model
     for model_name in ['gpt', 'gemini', 'claude']:
         mae_values = []
+        log_loss_values = []
         matched_questions = []
         paired_human_values = []  # Store paired human values for difference calculation
         model_predictions = []  # Store model predictions for baseline comparisons
 
         for idx, row in model_df.iterrows():
             question = row['question']
-            # Try to find matching human data
-            human_value = None
-
-            for human_q, human_val in human_data.items():
-                if question in human_q or human_q in question:
-                    human_value = human_val
-                    break
+            human_value = human_lookup.get(canonicalize_question(question))
 
             if human_value is not None:
                 # Get model confidence (use weighted for GPT/Gemini, regular for Claude)
@@ -1036,6 +1098,7 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
                     # Calculate MAE
                     mae = abs(model_value - human_value)
                     mae_values.append(mae)
+                    log_loss_values.append(binary_cross_entropy(model_value, human_value))
 
                     matched_questions.append(question)
                     paired_human_values.append(human_value)
@@ -1046,8 +1109,11 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
             comparisons[model_name] = {
                 'mae': np.mean(mae_values),
                 'std': np.std(mae_values),
+                'log_loss': np.mean(log_loss_values),
+                'log_loss_std': np.std(log_loss_values),
                 'n_matched': len(mae_values),
                 'mae_values': mae_values,
+                'log_loss_values': log_loss_values,
                 'questions': matched_questions
             }
 
@@ -1057,6 +1123,12 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
                 comparisons[model_name]['mae_bootstrap'] = mae_mean
                 comparisons[model_name]['mae_ci_lower'] = mae_ci_lower
                 comparisons[model_name]['mae_ci_upper'] = mae_ci_upper
+
+                # Calculate bootstrapped confidence intervals for binary cross entropy/log loss
+                log_loss_mean, log_loss_ci_lower, log_loss_ci_upper = bootstrap_mae(log_loss_values)
+                comparisons[model_name]['log_loss_bootstrap'] = log_loss_mean
+                comparisons[model_name]['log_loss_ci_lower'] = log_loss_ci_lower
+                comparisons[model_name]['log_loss_ci_upper'] = log_loss_ci_upper
 
                 # Compare to Always 50% baseline
                 baseline_50_mae_values = [abs(0.5 - hv) for hv in paired_human_values]
@@ -1075,17 +1147,8 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
                 }
 
                 # Compare to Normal(human μ, σ) baseline
-                # Generate predictions from normal distribution for the same questions
-                np.random.seed(43)  # Same seed as baseline calculation for consistency
-                human_mean = np.mean(human_values)
-                human_std = np.std(human_values)
-
-                normal_human_mae_values = []
-                for hv in paired_human_values:
-                    normal_value = np.random.normal(human_mean * 100, human_std * 100)
-                    normal_value = np.clip(normal_value, 0, 100) / 100.0
-                    mae_normal = abs(normal_value - hv)
-                    normal_human_mae_values.append(mae_normal)
+                normal_human_mae_values = normal_baseline_expected_errors(
+                    paired_human_values, human_values)
 
                 # Calculate difference from Normal(human) baseline
                 diff_mean_normal, diff_ci_lower_normal, diff_ci_upper_normal, p_value_normal = bootstrap_mae_difference(
@@ -1107,12 +1170,7 @@ def compare_with_human_data(model_df, human_data, baselines, calculate_bootstrap
 
             for idx, row in model_df.iterrows():
                 question = row['question']
-                human_value = None
-
-                for human_q, human_val in human_data.items():
-                    if question in human_q or human_q in question:
-                        human_value = human_val
-                        break
+                human_value = human_lookup.get(canonicalize_question(question))
 
                 if human_value is not None:
                     if model_name in ['claude', 'random']:
@@ -1154,10 +1212,10 @@ def generate_latex_tables(comparisons, baselines):
 \hline
 """
 
-    # Add baseline results first (Random and Equanimity style)
+    # Add baseline results first
     baseline_names_map = {
-        'always_50': 'Random (Always 50%)',
-        'normal_human': 'Equanimity (Human Normal)'
+        'always_50': 'Equanimity',
+        'normal_human': 'Normal'
     }
 
     for baseline_name in ['always_50', 'normal_human']:
@@ -1172,7 +1230,7 @@ def generate_latex_tables(comparisons, baselines):
     table1 += r"\hline" + "\n"
 
     # Add model results
-    model_names = {'gpt': 'GPT-4.1', 'gemini': 'Gemini-2.0-flash', 'claude': 'Claude Opus 4.1'}
+    model_names = {'gpt': 'GPT-4.1', 'gemini': 'Gemini 2.5 Pro', 'claude': 'Claude Opus 4.1'}
     for model_key in ['gpt', 'claude', 'gemini']:  # Reorder as in example
         if model_key in comparisons:
             m = comparisons[model_key]
@@ -1191,17 +1249,55 @@ def generate_latex_tables(comparisons, baselines):
 
     latex_tables.append(table1)
 
+    # Supplemental table: Binary cross entropy / log loss
+    table_log_loss = r"""\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Model} & \textbf{Log Loss} & \textbf{95\% CI} \\
+\hline
+"""
+
+    for baseline_name in ['always_50', 'normal_human']:
+        if baseline_name in baselines:
+            b = baselines[baseline_name]
+            name = baseline_names_map.get(baseline_name, b['description'])
+            log_loss = b['log_loss']
+            ci_lower = b['log_loss_ci_lower']
+            ci_upper = b['log_loss_ci_upper']
+            table_log_loss += f"{name} & {log_loss:.3f} & [{ci_lower:.3f}, {ci_upper:.3f}] \\\\\n"
+
+    table_log_loss += r"\hline" + "\n"
+
+    for model_key in ['gpt', 'claude', 'gemini']:
+        if model_key in comparisons:
+            m = comparisons[model_key]
+            name = model_names[model_key]
+            log_loss = m['log_loss']
+            ci_lower = m['log_loss_ci_lower']
+            ci_upper = m['log_loss_ci_upper']
+            table_log_loss += f"{name} & {log_loss:.3f} & [{ci_lower:.3f}, {ci_upper:.3f}] \\\\\n"
+
+    table_log_loss += r"""\hline
+\end{tabular}
+\caption{Binary cross entropy (log loss) of models and baselines, treating the mean human response for each ordinary-meaning question as a fractional label. Lower log-loss values indicate better probabilistic alignment with human judgments.}
+\label{tab:log_loss_results}
+\end{table}
+\FloatBarrier"""
+
+    latex_tables.append(table_log_loss)
+
     # Table 2: MAE Differences from Baseline with p-values
     table2 = r"""\begin{table}[H]
 \centering
 \begin{tabular}{lccc}
 \hline
 \textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} & \textbf{p-value} \\
- & \textbf{from Random} & & \\
+ & \textbf{from Equanimity} & & \\
 \hline
 """
 
-    # Add model comparisons vs Random (Always 50%)
+    # Add model comparisons vs Equanimity (Always 50%)
     for model_key in ['gpt', 'claude', 'gemini']:
         if model_key in comparisons:
             m = comparisons[model_key]
@@ -1229,8 +1325,8 @@ def generate_latex_tables(comparisons, baselines):
 
     table2 += r"""\hline
 \end{tabular}
-\caption{MAE difference between each model and Random baseline (always predicting 50\%). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
-\label{tab:mae_vs_random}
+\caption{MAE difference between each model and Equanimity baseline (always predicting 50\%). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
+\label{tab:mae_vs_equanimity}
 \end{table}
 \FloatBarrier"""
 
@@ -1242,7 +1338,7 @@ def generate_latex_tables(comparisons, baselines):
 \begin{tabular}{lccc}
 \hline
 \textbf{Model} & \textbf{MAE Difference} & \textbf{95\% CI} & \textbf{p-value} \\
- & \textbf{from Equanimity} & & \\
+ & \textbf{from Normal} & & \\
 \hline
 """
 
@@ -1274,8 +1370,8 @@ def generate_latex_tables(comparisons, baselines):
 
     table3 += r"""\hline
 \end{tabular}
-\caption{MAE difference between each model and Equanimity baseline (normal distribution with human mean and std). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
-\label{tab:mae_vs_equanimity}
+\caption{MAE difference between each model and Normal baseline (expected absolute error under a clipped normal distribution with the human-question mean and standard deviation). Positive differences indicate worse performance than baseline. P-values test whether the difference is significantly different from zero.}
+\label{tab:mae_vs_normal}
 \end{table}
 \FloatBarrier"""
 
@@ -1390,16 +1486,11 @@ def create_mae_heatmap(model_df, human_data, output_path):
 
     mae_matrix = []
     matched_questions = []
+    human_lookup = build_human_lookup(human_data)
 
     for idx, row in model_df.iterrows():
         question = row['question']
-
-        # Find matching human data
-        human_value = None
-        for human_q, human_val in human_data.items():
-            if question in human_q or human_q in question:
-                human_value = human_val
-                break
+        human_value = human_lookup.get(canonicalize_question(question))
 
         if human_value is not None:
             mae_row = []
@@ -1477,16 +1568,11 @@ def create_per_question_error_plot(model_df, human_data, output_path):
     # Store errors for each model
     errors_by_model = {model: [] for model in models}
     question_indices = []
+    human_lookup = build_human_lookup(human_data)
 
     for idx, row in model_df.iterrows():
         question = row['question']
-
-        # Find matching human data
-        human_value = None
-        for human_q, human_val in human_data.items():
-            if question in human_q or human_q in question:
-                human_value = human_val
-                break
+        human_value = human_lookup.get(canonicalize_question(question))
 
         if human_value is not None:
             question_indices.append(idx + 1)  # 1-indexed for display
@@ -1531,16 +1617,16 @@ def create_per_question_error_plot(model_df, human_data, output_path):
         mean_error = np.mean(valid_errors)
         ax.scatter(x_positions[i], mean_error, color='black', s=80, zorder=5)
 
-        # Calculate and plot 95% confidence interval
-        ci_lower = np.percentile(valid_errors, 2.5)
-        ci_upper = np.percentile(valid_errors, 97.5)
+        # Plot the descriptive middle 95% of per-question errors.
+        interval_lower = np.percentile(valid_errors, 2.5)
+        interval_upper = np.percentile(valid_errors, 97.5)
 
-        # Draw CI as a vertical line with caps
-        ax.plot([x_positions[i], x_positions[i]], [ci_lower, ci_upper],
+        # Draw the output interval as a vertical line with caps.
+        ax.plot([x_positions[i], x_positions[i]], [interval_lower, interval_upper],
                 'k-', linewidth=1.5, alpha=0.5)
-        ax.plot([x_positions[i] - 0.05, x_positions[i] + 0.05], [ci_lower, ci_lower],
+        ax.plot([x_positions[i] - 0.05, x_positions[i] + 0.05], [interval_lower, interval_lower],
                 'k-', linewidth=1.5, alpha=0.5)
-        ax.plot([x_positions[i] - 0.05, x_positions[i] + 0.05], [ci_upper, ci_upper],
+        ax.plot([x_positions[i] - 0.05, x_positions[i] + 0.05], [interval_upper, interval_upper],
                 'k-', linewidth=1.5, alpha=0.5)
 
     # Add horizontal line at zero
@@ -1592,13 +1678,18 @@ def create_visualizations(df, correlations, human_comparisons=None):
     else:
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
-    # Plot 1: GPT vs Gemini relative probabilities
-    if 'gpt_relative_prob' in df.columns and 'gemini_relative_prob' in df.columns:
-        axes[0, 0].scatter(df['gpt_relative_prob'], df['gemini_relative_prob'], alpha=0.6)
-        axes[0, 0].plot([0, 1], [0, 1], 'r--', alpha=0.5)
-        axes[0, 0].set_xlabel('GPT-4.1 Relative Probability')
-        axes[0, 0].set_ylabel('Gemini Relative Probability')
-        axes[0, 0].set_title(f'GPT vs Gemini (ρ={correlations.get("gpt_gemini_relative_prob", {}).get("correlation", 0):.3f})')
+    # Plot 1: GPT weighted confidence vs Gemini stated confidence
+    if 'gpt_weighted_confidence' in df.columns and 'gemini_confidence' in df.columns:
+        axes[0, 0].scatter(
+            df['gpt_weighted_confidence'], df['gemini_confidence'], alpha=0.6
+        )
+        axes[0, 0].plot([0, 100], [0, 100], 'r--', alpha=0.5)
+        axes[0, 0].set_xlabel('GPT-4.1 Weighted Confidence')
+        axes[0, 0].set_ylabel('Gemini 2.5 Pro Stated Confidence')
+        correlation = correlations.get('gpt_gemini_confidence', {}).get(
+            'correlation', float('nan')
+        )
+        axes[0, 0].set_title(f'GPT vs Gemini (r={correlation:.3f})')
 
     # Plot 2: GPT weighted confidence distribution
     if 'gpt_weighted_confidence' in df.columns:
@@ -1609,13 +1700,13 @@ def create_visualizations(df, correlations, human_comparisons=None):
         axes[0, 1].axvline(df['gpt_weighted_confidence'].mean(), color='red', linestyle='--', label=f'Mean: {df["gpt_weighted_confidence"].mean():.1f}')
         axes[0, 1].legend()
 
-    # Plot 3: Gemini weighted confidence distribution
-    if 'gemini_weighted_confidence' in df.columns:
-        axes[0, 2].hist(df['gemini_weighted_confidence'].dropna(), bins=20, edgecolor='black', alpha=0.7)
-        axes[0, 2].set_xlabel('Weighted Confidence')
+    # Plot 3: Gemini stated confidence distribution
+    if 'gemini_confidence' in df.columns:
+        axes[0, 2].hist(df['gemini_confidence'].dropna(), bins=20, edgecolor='black', alpha=0.7)
+        axes[0, 2].set_xlabel('Stated Confidence')
         axes[0, 2].set_ylabel('Frequency')
-        axes[0, 2].set_title('Gemini Weighted Confidence Distribution')
-        axes[0, 2].axvline(df['gemini_weighted_confidence'].mean(), color='red', linestyle='--', label=f'Mean: {df["gemini_weighted_confidence"].mean():.1f}')
+        axes[0, 2].set_title('Gemini 2.5 Pro Stated Confidence Distribution')
+        axes[0, 2].axvline(df['gemini_confidence'].mean(), color='red', linestyle='--', label=f'Mean: {df["gemini_confidence"].mean():.1f}')
         axes[0, 2].legend()
 
     # Plot 4: Claude confidence distribution
@@ -1640,7 +1731,7 @@ def create_visualizations(df, correlations, human_comparisons=None):
                 col1 = f'{model1}_response'
                 col2 = f'{model2}_response'
                 if col1 in df.columns and col2 in df.columns:
-                    agreement = (df[col1] == df[col2]).mean()
+                    agreement, _ = binary_agreement_rate(df[col1], df[col2])
                     agreement_matrix[i, j] = agreement
 
     im = axes[1, 1].imshow(agreement_matrix, cmap='coolwarm', vmin=0, vmax=1)
@@ -1658,9 +1749,9 @@ def create_visualizations(df, correlations, human_comparisons=None):
 
     # Plot 6: Response distribution by model
     response_counts = pd.DataFrame({
-        'GPT-4.1': df['gpt_response'].value_counts(),
-        'Gemini': df['gemini_response'].value_counts(),
-        'Claude': df['claude_response'].value_counts()
+        'GPT-4.1': df['gpt_response'].map(normalize_binary_response).value_counts(),
+        'Gemini 2.5 Pro': df['gemini_response'].map(normalize_binary_response).value_counts(),
+        'Claude Opus 4.1': df['claude_response'].map(normalize_binary_response).value_counts()
     }).fillna(0)
 
     response_counts.T.plot(kind='bar', ax=axes[1, 2])
@@ -1784,11 +1875,13 @@ def create_visualizations(df, correlations, human_comparisons=None):
         confidence_data = []
         labels = []
 
+        confidence_columns = {
+            'gpt': 'gpt_weighted_confidence',
+            'gemini': 'gemini_confidence',
+            'claude': 'claude_confidence',
+        }
         for model in ['gpt', 'gemini', 'claude']:
-            if model == 'claude':
-                col = f'{model}_confidence'
-            else:
-                col = f'{model}_weighted_confidence'
+            col = confidence_columns[model]
 
             if col in df.columns:
                 data = df[col].dropna()
@@ -1843,13 +1936,23 @@ def create_visualizations(df, correlations, human_comparisons=None):
             # Add baseline results (only the two we're keeping)
             if 'always_50' in baseline_comparisons:
                 mae_data.append(baseline_comparisons['always_50']['mae'])
-                std_data.append(baseline_comparisons['always_50'].get('mae_std', baseline_comparisons['always_50'].get('std', 0)))
+                if 'mae_ci_lower' in baseline_comparisons['always_50'] and 'mae_ci_upper' in baseline_comparisons['always_50']:
+                    ci_lower = baseline_comparisons['always_50']['mae'] - baseline_comparisons['always_50']['mae_ci_lower']
+                    ci_upper = baseline_comparisons['always_50']['mae_ci_upper'] - baseline_comparisons['always_50']['mae']
+                    std_data.append([[ci_lower], [ci_upper]])
+                else:
+                    std_data.append(baseline_comparisons['always_50'].get('mae_std', baseline_comparisons['always_50'].get('std', 0)))
                 labels.append('Always 50%\n(Baseline)')
                 colors.append('#808080')
 
             if 'normal_human' in baseline_comparisons:
                 mae_data.append(baseline_comparisons['normal_human']['mae'])
-                std_data.append(baseline_comparisons['normal_human'].get('mae_std', baseline_comparisons['normal_human'].get('std', 0)))
+                if 'mae_ci_lower' in baseline_comparisons['normal_human'] and 'mae_ci_upper' in baseline_comparisons['normal_human']:
+                    ci_lower = baseline_comparisons['normal_human']['mae'] - baseline_comparisons['normal_human']['mae_ci_lower']
+                    ci_upper = baseline_comparisons['normal_human']['mae_ci_upper'] - baseline_comparisons['normal_human']['mae']
+                    std_data.append([[ci_lower], [ci_upper]])
+                else:
+                    std_data.append(baseline_comparisons['normal_human'].get('mae_std', baseline_comparisons['normal_human'].get('std', 0)))
                 human_mean = baseline_comparisons['normal_human'].get('human_mean', 62)
                 human_std = baseline_comparisons['normal_human'].get('human_std', 17)
                 labels.append(f'N({human_mean:.0f},{human_std:.0f})\n(Baseline)')
@@ -1899,51 +2002,127 @@ def create_visualizations(df, correlations, human_comparisons=None):
             plt.savefig(f"{OUTPUT_DIR}/mae_comparison.png", dpi=300, bbox_inches='tight')
             print(f"Saved MAE comparison to {OUTPUT_DIR}/mae_comparison.png")
 
-def main():
+def require_api_credentials():
+    """Raise a clear error only for modes that make external API calls."""
+    missing = [
+        name
+        for name, value in [
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
+            ("GEMINI_API_KEY", GEMINI_API_KEY),
+            ("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY),
+        ]
+        if not value
+    ]
+    if missing:
+        raise RuntimeError(
+            "API evaluation requires: " + ", ".join(missing)
+            + ". Offline analysis of the checked-in CSV does not require keys."
+        )
+
+
+def load_or_evaluate_model_results(questions, refresh=False, fill_missing=False):
+    """Load checked-in model results or explicitly obtain missing/fresh results."""
+    saved_results_file = os.path.join(
+        OUTPUT_DIR, "closed_source_evaluation_results.csv"
+    )
+
+    if refresh:
+        require_api_credentials()
+        print("\nRefreshing all model results from the external APIs...")
+        return evaluate_all_models(questions)
+
+    if not os.path.exists(saved_results_file):
+        raise FileNotFoundError(
+            f"No checked-in model results found at {saved_results_file}. "
+            "Run with --refresh-model-results to make a fresh API-backed run."
+        )
+
+    print(f"\nLoading existing results from {saved_results_file}...")
+    results_df = pd.read_csv(saved_results_file)
+    results_df["_question_key"] = results_df["question"].map(canonicalize_question)
+    if results_df["_question_key"].duplicated().any():
+        duplicates = results_df.loc[
+            results_df["_question_key"].duplicated(keep=False), "question"
+        ].tolist()
+        raise ValueError(f"Duplicate model-result questions: {duplicates}")
+
+    expected_by_key = {canonicalize_question(q): q for q in questions}
+    existing_keys = set(results_df["_question_key"])
+    missing_keys = [key for key in expected_by_key if key not in existing_keys]
+    extra_keys = [key for key in existing_keys if key not in expected_by_key]
+
+    if missing_keys and not fill_missing:
+        missing_questions = [expected_by_key[key] for key in missing_keys]
+        raise ValueError(
+            "Checked-in model results do not cover the 100 substantive questions. "
+            f"Missing: {missing_questions}. Run with --fill-missing to query only "
+            "those items."
+        )
+
+    if missing_keys:
+        require_api_credentials()
+        missing_questions = [expected_by_key[key] for key in missing_keys]
+        print(f"Evaluating {len(missing_questions)} missing substantive question(s)...")
+        additions = evaluate_all_models(missing_questions)
+        additions["_question_key"] = additions["question"].map(canonicalize_question)
+        results_df = pd.concat([results_df, additions], ignore_index=True)
+
+    if extra_keys:
+        extras = results_df.loc[
+            results_df["_question_key"].isin(extra_keys), "question"
+        ].tolist()
+        print(f"Dropping non-substantive/extra result rows: {extras}")
+
+    records_by_key = {
+        row["_question_key"]: row.drop(labels=["_question_key"]).to_dict()
+        for _, row in results_df.iterrows()
+        if row["_question_key"] in expected_by_key
+    }
+    ordered_records = []
+    for question in questions:
+        key = canonicalize_question(question)
+        if key not in records_by_key:
+            raise ValueError(f"No model result available for: {question}")
+        record = records_by_key[key]
+        record["question"] = question
+        ordered_records.append(record)
+
+    ordered_df = pd.DataFrame(ordered_records)
+    print(f"Using {len(ordered_df)} substantive model-result rows")
+    return ordered_df
+
+
+def main(argv=None):
     """Main execution function."""
+    parser = argparse.ArgumentParser(
+        description="Analyze checked-in ordinary-meaning model results."
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--refresh-model-results",
+        action="store_true",
+        help="Query all three external model APIs for all 100 questions.",
+    )
+    mode.add_argument(
+        "--fill-missing",
+        action="store_true",
+        help="Query APIs only for substantive questions missing from the checked-in CSV.",
+    )
+    args = parser.parse_args(argv)
+
     print("="*60)
     print("CLOSED-SOURCE LLM EVALUATION ON ORDINARY MEANING QUESTIONS")
     print("(Extended to 100 Questions - Parts 1 & 2)")
     print("="*60)
 
-    # Check API keys
-    if not all([OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY]):
-        print("ERROR: Missing API keys. Please set all required API keys in config.py")
-        return
-
     # Load questions
     print("\nLoading ordinary meaning questions...")
     questions = load_ordinary_meaning_questions()
-    print(f"Loaded {len(questions)} questions")
-
-    # Check if we should load from saved results instead of cache/API
-    saved_results_file = f"{OUTPUT_DIR}/closed_source_evaluation_results.csv"
-    if os.path.exists(saved_results_file):
-        print(f"\nLoading existing results from {saved_results_file}...")
-        results_df = pd.read_csv(saved_results_file)
-        print(f"Loaded {len(results_df)} results from file")
-    else:
-        # Check cache status
-        if USE_CACHE and os.path.exists(CACHE_FILE):
-            print(f"\nCache mode: ENABLED (using cached results from {CACHE_FILE})")
-            print("To force fresh API calls, set USE_CACHE = False in the script")
-        else:
-            print(f"\nCache mode: DISABLED (will make fresh API calls)")
-            # Estimate time and cost
-            total_api_calls = len(questions) * 6  # 2 calls per model per question
-            estimated_time = (len(questions) * (GPT_DELAY * 2 + GEMINI_DELAY * 2 + CLAUDE_DELAY * 2)) / 60
-            print(f"\nEstimated processing time: {estimated_time:.1f} minutes")
-            print(f"Total API calls: {total_api_calls}")
-
-            # Confirm before proceeding
-            response = input("\nProceed with evaluation? (yes/no): ")
-            if response.lower() != 'yes':
-                print("Evaluation cancelled.")
-                return
-
-        # Evaluate all models
-        print("\nStarting evaluation...")
-        results_df = evaluate_all_models(questions)
+    results_df = load_or_evaluate_model_results(
+        questions,
+        refresh=args.refresh_model_results,
+        fill_missing=args.fill_missing,
+    )
 
     # Save results
     results_df.to_csv(f"{OUTPUT_DIR}/closed_source_evaluation_results.csv", index=False)
@@ -1967,7 +2146,9 @@ def main():
 
     # Load and compare with human data
     print("\nLoading human survey data...")
-    human_data, full_responses = load_human_survey_data(return_full_data=True)
+    human_data, full_responses, exclusion_stats = load_human_survey_data(
+        return_full_data=True
+    )
     comparisons = {}
     baselines = {}
     human_stats = {}
@@ -2007,7 +2188,7 @@ def main():
             for model, metrics in comparisons.items():
                 model_display = model.upper() if model != 'claude' else 'Claude'
                 print(f"{model_display}:")
-                print(f"  MAE: {metrics['mae']:.3f} ± {metrics.get('mae_std', metrics.get('std', 0)):.3f}")
+                print(f"  MAE: {metrics['mae']:.3f} +/- {metrics.get('mae_std', metrics.get('std', 0)):.3f}")
                 if 'mae_ci_lower' in metrics and 'mae_ci_upper' in metrics:
                     print(f"  MAE 95% CI: [{metrics['mae_ci_lower']:.3f}, {metrics['mae_ci_upper']:.3f}]")
 
@@ -2038,7 +2219,7 @@ def main():
             print("-" * 40)
             for baseline_name, metrics in baselines.items():
                 print(f"{metrics['description']}:")
-                print(f"  MAE: {metrics['mae']:.3f} ± {metrics.get('mae_std', metrics.get('std', 0)):.3f}")
+                print(f"  MAE: {metrics['mae']:.3f} +/- {metrics.get('mae_std', metrics.get('std', 0)):.3f}")
                 if 'mae_ci_lower' in metrics and 'mae_ci_upper' in metrics:
                     print(f"  MAE 95% CI: [{metrics['mae_ci_lower']:.3f}, {metrics['mae_ci_upper']:.3f}]")
 
@@ -2073,11 +2254,50 @@ def main():
         comparison_data = {
             'models': comparisons,
             'baselines': baselines,
-            'human_statistics': human_stats
+            'human_statistics': human_stats,
+            'survey_exclusions': exclusion_stats,
         }
 
         with open(f"{OUTPUT_DIR}/human_comparisons.json", 'w') as f:
             json.dump(comparison_data, f, indent=2, default=str)
+
+        evaluation_metadata = {
+            'model_snapshots': {
+                'gpt': GPT_MODEL,
+                'gemini': GEMINI_MODEL,
+                'claude': CLAUDE_MODEL,
+            },
+            'model_score_fields': {
+                'gpt': 'gpt_weighted_confidence',
+                'gemini': 'gemini_confidence',
+                'claude': 'claude_confidence',
+            },
+            'n_substantive_questions': int(len(results_df)),
+            'human_sample': exclusion_stats,
+            'bootstrap_resamples': 10000,
+            'valid_binary_responses': {
+                model: int(
+                    results_df[f'{model}_response']
+                    .map(normalize_binary_response)
+                    .isin({'yes', 'no'})
+                    .sum()
+                )
+                for model in ['gpt', 'gemini', 'claude']
+            },
+            'normal_baseline': (
+                'Leave-one-out expected error from a Normal distribution '
+                'clipped to [0, 1]'
+            ),
+            'result_mode': (
+                'full_api_refresh' if args.refresh_model_results
+                else 'filled_missing_api_results' if args.fill_missing
+                else 'checked_in_results'
+            ),
+        }
+        with open(
+            f"{OUTPUT_DIR}/evaluation_metadata.json", 'w', encoding='utf-8'
+        ) as f:
+            json.dump(evaluation_metadata, f, indent=2, default=str)
 
     # Create visualizations
     print("\nCreating visualizations...")
@@ -2094,14 +2314,21 @@ def main():
 
     # Agreement rates
     print("\nBinary Response Agreement Rates:")
-    print(f"  GPT-Gemini: {(results_df['gpt_response'] == results_df['gemini_response']).mean():.1%}")
-    print(f"  GPT-Claude: {(results_df['gpt_response'] == results_df['claude_response']).mean():.1%}")
-    print(f"  Gemini-Claude: {(results_df['gemini_response'] == results_df['claude_response']).mean():.1%}")
+    for first, second, label in [
+        ('gpt', 'gemini', 'GPT-Gemini'),
+        ('gpt', 'claude', 'GPT-Claude'),
+        ('gemini', 'claude', 'Gemini-Claude'),
+    ]:
+        agreement, n_valid = binary_agreement_rate(
+            results_df[f'{first}_response'],
+            results_df[f'{second}_response'],
+        )
+        print(f"  {label}: {agreement:.1%} (N={n_valid})")
 
     # Average confidence levels
     print("\nAverage Confidence Levels:")
     print(f"  GPT-4.1 (weighted): {results_df['gpt_weighted_confidence'].mean():.1f}")
-    print(f"  Gemini (weighted): {results_df['gemini_weighted_confidence'].mean():.1f}")
+    print(f"  Gemini (stated): {results_df['gemini_confidence'].mean():.1f}")
     print(f"  Claude (verbalized): {results_df['claude_confidence'].mean():.1f}")
 
     print("\nEvaluation complete!")

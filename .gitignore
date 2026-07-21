@@ -35,6 +35,8 @@ secrets.json
 # Test files - exclude all test scripts
 **/test_*.py
 test_*.py
+!tests/
+!tests/test_*.py
 
 # Investigation and debug scripts
 analysis/investigate_*.py
@@ -60,7 +62,7 @@ analysis/.claude/
 **/checkpoint.json
 **/checkpoint.pkl
 **/progress.json
-**/api_cache.json
+**/api_cache*.json
 **/results_cache.pkl
 **/*_intermediate.json
 **/intermediate_results*.csv
