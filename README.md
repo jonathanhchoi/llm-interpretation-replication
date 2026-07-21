@@ -5,6 +5,8 @@ Replication code and data for "Off-the-Shelf Large Language Models Are Unreliabl
 **Paper:** Available at [SSRN link]
 **Preregistration:** [OSF](https://osf.io/25gya/)
 
+The manuscript, online appendix, and presentation sources are maintained separately and are not included in this public replication repository.
+
 ## Overview
 
 This repository contains code to replicate the empirical analyses in the paper, which tests the reliability of large language models (LLMs) as legal interpreters through:
@@ -21,8 +23,6 @@ llm_interpretation_replication/
 ├── survey_analysis/             # Human survey analysis scripts
 ├── data/                        # Input data files
 ├── results/                     # Generated outputs (figures, tables)
-├── main.tex                     # Main paper LaTeX source
-├── main_online_appendix.tex     # Online appendix LaTeX source
 └── requirements.txt             # Python dependencies
 ```
 
@@ -41,7 +41,7 @@ This section demonstrates that LLM legal interpretations are highly sensitive to
 **Outputs:**
 - Figure 1 (`combined_prompts_visualization.png`) - Distribution of relative probabilities
 - Figure 2 (`combined_confidence_visualization.png`) - Distribution of verbalized confidence scores
-- Table 1 & 2 in `main.tex`
+- Tables 1-2 in the paper
 
 #### Section 3.6 & Appendix B: Robustness to Alternative Models
 
@@ -58,7 +58,7 @@ Tests GPT-5, Claude Opus 4.1, and Gemini 2.5 Pro on the same perturbations.
 
 **Outputs:**
 - Figure 5 (`three_model_stacked_visualization.png`) - Three-model comparison
-- Table in Appendix B (`main.tex` lines 539-574)
+- Table in Appendix B of the paper
 
 #### Section 3.6 & Appendix C: Irrelevant Information Perturbations
 
@@ -104,7 +104,7 @@ This section compares LLM judgments on ordinary meaning questions to human surve
 
 **Outputs:**
 - Figure 3 (`per_question_errors.png`) - Distribution of LLM errors vs human baseline
-- Tables 3-4 in `main.tex` (MAE comparisons)
+- Tables 3-4 in the paper (MAE comparisons)
 
 #### Section 4.3: Post-Training Effects on Ordinary Meaning
 
@@ -117,7 +117,7 @@ Compares base models vs instruction-tuned versions (Falcon, StableLM, RedPajama)
 - `survey_analysis/analyze_base_vs_instruct_mae_100q.py` - MAE analysis
 
 **Outputs:**
-- Table 5 (`main.tex` lines 432-446) - MAE comparison base vs post-trained
+- Table 5 in the paper - MAE comparison of base and post-trained models
 - Figure 7 (`prompt_rel_prob_differences.png`) - Probability differences
 - Figure 8 (`prompt_rel_prob_heatmap.png`) - Heatmap of changes
 

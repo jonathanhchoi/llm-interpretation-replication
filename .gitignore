@@ -162,3 +162,17 @@ results/oaxaca_blinder/
 
 # Large files exceeding GitHub's 100MB limit
 results/prompt_similarity/pairwise_rephrasings_similarity.xlsx
+
+# Private manuscript, presentation, and review materials
+/main.tex
+/main_online_appendix.tex
+/main_presentation.tex
+/main_old.tex
+/main_redline*.tex
+/main_redline*.pdf
+/off_the_shelf_llms_*.pdf
+/reply_and_resubmit_memo_*.md
+/reply_and_resubmit_memo_*.tex
+/reply_and_resubmit_memo_*.pdf
+/revise_and_resubmit_letter.pdf
+/output/
