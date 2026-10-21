@@ -819,8 +819,9 @@ def create_violin_plots(analysis: Dict, output_dir: str):
         'gemini': {'scenarios': [], 'confidence_lists': []}
     }
 
-    # Get sorted list of scenarios for consistent ordering
-    scenarios = sorted(analysis.keys())
+    # Keep scenarios in generation order so the x-axis numbers match Appendix A
+    # (sorting by name would number them alphabetically instead)
+    scenarios = list(analysis.keys())
 
     # Collect data for each model
     for scenario_idx, scenario in enumerate(scenarios):
@@ -1059,7 +1060,7 @@ def main():
                     print(f"{model.upper()}: {len(model_results)} evaluations across {len(scenarios)} scenarios")
 
             print("\nScenarios analyzed:")
-            for idx, scenario in enumerate(sorted(analysis.keys()), 1):
+            for idx, scenario in enumerate(analysis.keys(), 1):
                 print(f"  {idx}. {scenario}")
 
             # Regenerate visualization with the new format
